@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Wind Band Seating Planner v3.2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f3ee;--canvas:#fff;--panel:#f0ede6;--p2:#e8e4db;
+  --bd:#c8bfb0;--bd2:#b0a590;--acc:#2e6da4;
+  --wood:#2d7d46;--brass:#8a6200;--perc:#8b2020;--other:#5a3d8a;--plat:#8a7060;
+  --mu:#7a6e60;--mu2:#5a5048;--tx:#2a2418;--tx2:#4a4030;
+  --f:'Times New Roman',Times,serif;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg)}
+body{display:flex;font-family:var(--f);color:var(--tx);font-size:16px;-webkit-tap-highlight-color:transparent}
+
+/* SIDEBAR */
+#sb{width:270px;min-width:270px;background:var(--panel);border-right:1.5px solid var(--bd);
+  display:flex;flex-direction:column;overflow-y:auto;z-index:10;
+  scrollbar-width:thin;scrollbar-color:var(--bd2) transparent}
+.ss{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.sl{font-size:10px;letter-spacing:2px;color:var(--mu);margin-bottom:8px;
+  text-transform:uppercase;font-style:italic}
+.brand{font-size:22px;font-weight:bold;color:var(--acc)}
+.bsub{font-size:12px;color:var(--mu);letter-spacing:1px;margin-top:2px;font-style:italic}
+.vb{display:inline-block;margin-top:4px;font-size:11px;background:var(--p2);
+  border:1px solid var(--bd);color:var(--mu2);padding:2px 7px;letter-spacing:1px}
+
+input[type=text],select{width:100%;background:#fff;border:1px solid var(--bd);color:var(--tx);
+  padding:7px 9px;font-family:var(--f);font-size:14px;outline:none;
+  transition:border-color .15s;appearance:none;-webkit-appearance:none;border-radius:0}
+input[type=text]:focus,select:focus{border-color:var(--acc)}
+input[type=color]{height:30px;padding:2px 3px;cursor:pointer;border:1px solid var(--bd);
+  width:36px;flex-shrink:0;background:#fff}
+select{cursor:pointer}
+
+/* Buttons */
+.ab{width:100%;padding:8px 11px;font-size:14px;cursor:pointer;font-family:var(--f);
+  border:1px solid;margin-bottom:6px;transition:filter .12s;display:block;text-align:left}
+.ab:last-child{margin-bottom:0}.ab:hover{filter:brightness(.93)}
+.bu{background:#ddeeff;border-color:#2e6da4;color:#1a4f7a}
+.bd{background:#fde8e8;border-color:#b04040;color:#8b2020}
+.bc{background:#e8f0fa;border-color:#4a7aaa;color:#2e5a8a}
+.bp{background:#e8f5ec;border-color:#2d7d46;color:#1a5530}
+.bun{background:#f0ece0;border-color:#8a7a50;color:#5a4a20}
+.brs{background:#f5f0e8;border-color:#9a8a60;color:#6a5a30}
+.bex{background:#e8eefc;border-color:#3a5aaa;color:#1e3a7a}
+.bpl{background:#f0ebe3;border-color:var(--plat);color:var(--plat)}
+
+/* Collapsible seat groups */
+.gh{display:flex;align-items:center;justify-content:space-between;width:100%;
+  background:var(--p2);border:1px solid var(--bd);color:var(--tx2);
+  padding:8px 11px;font-size:14px;cursor:pointer;font-family:var(--f);transition:background .12s}
+.gh:not(:first-child){border-top:none}
+.gh:hover{background:#ddd8cc}
+.gh .lft{display:flex;align-items:center;gap:8px}
+.gh .arr{font-size:10px;color:var(--mu);transition:transform .15s}
+.gh.open .arr{transform:rotate(90deg)}
+.gb{display:none;border:1px solid var(--bd);border-top:none}
+.gb.open{display:block}
+.sb2{display:block;width:100%;background:#fff;border:none;border-bottom:1px solid var(--bd);
+  color:var(--tx2);padding:7px 11px 7px 26px;font-size:13px;cursor:pointer;
+  font-family:var(--f);text-align:left;transition:background .1s}
+.sb2:last-child{border-bottom:none}.sb2:hover{background:#f0ede6}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:4px}
+
+/* Align row */
+.ar{display:flex;gap:4px;margin-bottom:6px}
+.ar .ab{margin-bottom:0;flex:1;text-align:center;padding:6px 2px;font-size:12px}
+
+/* Platform inputs */
+.pr{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.pr label{font-size:12px;color:var(--mu2);font-style:italic;width:44px;flex-shrink:0}
+.pr input[type=number]{flex:1;background:#fff;border:1px solid var(--bd);
+  color:var(--tx);padding:5px 7px;font-family:var(--f);font-size:13px;outline:none}
+.pr input[type=number]:focus{border-color:var(--acc)}
+
+/* Color rows */
+.cr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.cr label{font-size:13px;color:var(--tx2);flex:1}
+
+/* Panel visibility via body class */
+#ep,#mp,#pp{display:none}
+body.ep #ep,body.mp #mp,body.pp #pp{display:block}
+
+.stog{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mu2);
+  cursor:pointer;padding:5px 0;user-select:none}
+.stog input{width:14px;height:14px;cursor:pointer;accent-color:var(--acc)}
+
+.zr{display:flex;gap:4px;margin-bottom:8px}
+.zb{flex:1;background:var(--p2);border:1px solid var(--bd2);color:var(--tx2);
+  padding:8px 4px;font-size:16px;cursor:pointer;font-family:var(--f);
+  transition:all .12s;text-align:center}
+.zb:hover{border-color:var(--acc);color:var(--acc)}
+.zb.sm{font-size:12px}
+
+/* Arrange panel */
+.arp-tabs{display:flex;gap:0;margin-bottom:10px}
+.arp-tab{flex:1;padding:6px 4px;font-size:13px;cursor:pointer;font-family:var(--f);
+  border:1px solid var(--bd2);background:var(--p2);color:var(--mu2);text-align:center;
+  transition:all .12s}
+.arp-tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.arp-tab:first-child{border-right:none}
+.arp-row{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+.arp-row label{font-size:11px;color:var(--mu2);font-style:italic;width:52px;flex-shrink:0}
+.arp-row input[type=range]{flex:1;accent-color:var(--acc)}
+.arp-row input[type=number]{width:54px;background:#fff;border:1px solid var(--bd);
+  color:var(--tx);padding:4px 6px;font-family:var(--f);font-size:13px;outline:none;flex-shrink:0}
+.arp-row input[type=number]:focus{border-color:var(--acc)}
+.arp-row select{flex:1;background:#fff;border:1px solid var(--bd);color:var(--tx);
+  padding:5px 7px;font-family:var(--f);font-size:13px;outline:none;appearance:none;cursor:pointer}
+.arp-row select:focus{border-color:var(--acc)}
+#arp-preview-btn{width:100%;padding:7px;font-size:13px;cursor:pointer;font-family:var(--f);
+  border:1px solid #4a7aaa;background:#e8f0fa;color:#2e5a8a;margin-bottom:6px;transition:filter .12s}
+#arp-preview-btn:hover{filter:brightness(.93)}
+#cw{flex:1;position:relative;overflow:hidden;background:var(--canvas)}
+#svg{width:100%;height:100%;display:block;cursor:grab;user-select:none;-webkit-user-select:none;
+  touch-action:none;-webkit-touch-callout:none}
+.so{-webkit-touch-callout:none}
+
+/* Floating label bar */
+#le{display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(245,243,238,0.98);border:1.5px solid var(--acc);
+  padding:8px 12px;z-index:30;gap:8px;align-items:center;
+  box-shadow:0 3px 18px rgba(0,0,0,0.16);white-space:nowrap}
+#le.vis{display:flex}
+#le span{font-size:11px;color:var(--mu);font-style:italic}
+#le input{width:145px;padding:5px 8px;font-size:14px;background:#fff;
+  border:1px solid var(--bd2);color:var(--tx);font-family:var(--f)}
+#le select{width:112px;padding:5px 7px;font-size:13px;background:#fff;
+  border:1px solid var(--bd2);color:var(--tx);font-family:var(--f)}
+.lb{padding:5px 11px;font-size:13px;cursor:pointer;font-family:var(--f);
+  border:1px solid;transition:filter .1s}
+.lb:hover{filter:brightness(.93)}
+.la{background:#ddeeff;border-color:#2e6da4;color:#1a4f7a}
+.ld{background:#fde8e8;border-color:#b04040;color:#8b2020}
+.lx{background:var(--p2);border-color:var(--bd);color:var(--mu);padding:4px 8px;font-size:15px}
+
+/* Overlays */
+#ms-btn{position:absolute;top:12px;right:12px;z-index:25;
+  background:rgba(245,243,238,0.97);border:1.5px solid var(--bd2);color:var(--tx2);
+  font-family:var(--f);font-size:13px;padding:8px 13px;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;gap:6px;
+  transition:all .12s}
+#ms-btn:hover{border-color:var(--acc);color:var(--acc)}
+#ms-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+#legend{position:absolute;top:58px;right:12px;background:rgba(245,243,238,0.95);
+  border:1px solid var(--bd);padding:11px 15px;pointer-events:none}
+.lr{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;font-style:italic}
+.lr:last-child{margin-bottom:0}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ldot.sq{border-radius:2px}
+#hint{position:absolute;bottom:12px;right:12px;background:rgba(245,243,238,0.92);
+  border:1px solid var(--bd);padding:9px 13px;font-size:11px;color:var(--mu);
+  line-height:2;pointer-events:none;font-style:italic}
+#zbadge{position:absolute;bottom:12px;left:12px;background:rgba(245,243,238,0.92);
+  border:1px solid var(--bd);padding:7px 13px;font-size:14px;color:var(--mu);pointer-events:none}
+#toast{position:absolute;bottom:50px;left:12px;background:rgba(245,243,238,0.97);
+  border:1px solid var(--bd2);padding:7px 15px;font-size:14px;color:var(--tx2);
+  pointer-events:none;opacity:0;transition:opacity .3s;font-style:italic;white-space:nowrap}
+
+/* MOBILE: menu button + drawer backdrop */
+#menu-btn{display:none;position:fixed;top:12px;left:12px;z-index:60;
+  width:42px;height:42px;background:rgba(245,243,238,0.97);border:1.5px solid var(--bd2);
+  color:var(--tx2);font-size:20px;cursor:pointer;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.14)}
+#sb-backdrop{display:none;position:fixed;inset:0;background:rgba(30,25,15,0.35);z-index:15}
+#sb-backdrop.vis{display:block}
+
+@media (max-width:820px){
+  #menu-btn{display:flex}
+  #sb{position:fixed;top:0;left:0;height:100dvh;width:84vw;max-width:320px;
+    transform:translateX(-100%);transition:transform .25s ease;z-index:20;
+    box-shadow:2px 0 20px rgba(0,0,0,0.18)}
+  #sb.open{transform:translateX(0)}
+  #le{top:auto;bottom:66px;left:8px;right:8px;transform:none;width:auto;
+    flex-wrap:wrap;justify-content:center;padding:9px;max-width:none}
+  #le input{width:120px;flex:1;min-width:96px}
+  #le select{width:100px;flex:1;min-width:88px}
+  #legend{top:auto;bottom:60px;right:8px;left:8px;display:flex;flex-wrap:wrap;
+    gap:3px 12px;padding:7px 10px}
+  #legend .lr{margin-bottom:0;font-size:11px}
+  #hint{display:none}
+  #zbadge{bottom:8px;left:8px;font-size:12px;padding:6px 10px}
+  .ab{min-height:40px;padding:10px 11px}
+  .sb2{min-height:38px}
+  .zb{min-height:44px}
+  .lb{min-height:40px}
+  #ms-btn{padding:10px 14px;font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<button id="menu-btn" onclick="toggleSidebar()" aria-label="Menu">&#9776;</button>
+<div id="sb-backdrop" onclick="closeSidebar()"></div>
+
+<div id="sb">
+  <div class="ss">
+    <div class="brand">Wind Band</div>
+    <div class="bsub">Seating Planner</div>
+    <div class="vb">v3.2</div>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Chart Title</div>
+    <input type="text" id="chart-title" value="Small Wind Ensemble"/>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Layout</div>
+    <button class="ab brs" onclick="confirmReset()">&#9656; Small Wind Ensemble</button>
+    <button class="ab brs" style="margin-bottom:0" onclick="confirmWindBand()">&#9656; Wind Band</button>
+  </div>
+
+  <div class="ss">
+    <div class="sl">History</div>
+    <button class="ab bun" onclick="undo()">&#8617; Undo <span style="opacity:.4;font-size:11px">(Ctrl+Z)</span></button>
+    <button class="ab bun" style="margin-bottom:0" onclick="redo()">&#8618; Redo <span style="opacity:.4;font-size:11px">(Ctrl+Y)</span></button>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Add Seat</div>
+    <div class="gh" onclick="toggleGrp(this)">
+      <div class="lft"><span class="dot" style="background:var(--wood)"></span><span style="color:var(--wood)">Woodwind</span></div>
+      <span class="arr">&#9654;</span>
+    </div>
+    <div class="gb">
+      <button class="sb2" onclick="addSeat('woodwind','Piccolo')"><span class="dot" style="background:var(--wood)"></span>Piccolo</button>
+      <button class="sb2" onclick="addSeat('woodwind','Flute')"><span class="dot" style="background:var(--wood)"></span>Flute</button>
+      <button class="sb2" onclick="addSeat('woodwind','Oboe')"><span class="dot" style="background:var(--wood)"></span>Oboe</button>
+      <button class="sb2" onclick="addSeat('woodwind','Bassoon')"><span class="dot" style="background:var(--wood)"></span>Bassoon</button>
+      <button class="sb2" onclick="addSeat('woodwind','Clarinet')"><span class="dot" style="background:var(--wood)"></span>Clarinet</button>
+      <button class="sb2" onclick="addSeat('woodwind','Bass Clarinet')"><span class="dot" style="background:var(--wood)"></span>Bass Clarinet</button>
+      <button class="sb2" onclick="addSeat('woodwind','Alto Saxophone')"><span class="dot" style="background:var(--wood)"></span>Alto Saxophone</button>
+      <button class="sb2" onclick="addSeat('woodwind','Tenor Saxophone')"><span class="dot" style="background:var(--wood)"></span>Tenor Saxophone</button>
+      <button class="sb2" onclick="addSeat('woodwind','Baritone Saxophone')"><span class="dot" style="background:var(--wood)"></span>Baritone Saxophone</button>
+    </div>
+    <div class="gh" onclick="toggleGrp(this)">
+      <div class="lft"><span class="dot" style="background:var(--brass)"></span><span style="color:var(--brass)">Brass</span></div>
+      <span class="arr">&#9654;</span>
+    </div>
+    <div class="gb">
+      <button class="sb2" onclick="addSeat('brass','Trumpet')"><span class="dot" style="background:var(--brass)"></span>Trumpet</button>
+      <button class="sb2" onclick="addSeat('brass','Horn')"><span class="dot" style="background:var(--brass)"></span>Horn</button>
+      <button class="sb2" onclick="addSeat('brass','Trombone')"><span class="dot" style="background:var(--brass)"></span>Trombone</button>
+      <button class="sb2" onclick="addSeat('brass','Euphonium')"><span class="dot" style="background:var(--brass)"></span>Euphonium</button>
+      <button class="sb2" onclick="addSeat('brass','Tuba')"><span class="dot" style="background:var(--brass)"></span>Tuba</button>
+    </div>
+    <div class="gh" onclick="toggleGrp(this)">
+      <div class="lft"><span class="dot" style="background:var(--perc)"></span><span style="color:var(--perc)">Percussion</span></div>
+      <span class="arr">&#9654;</span>
+    </div>
+    <div class="gb">
+      <button class="sb2" onclick="addSeat('percussion','Percussion')"><span class="dot" style="background:var(--perc)"></span>Percussion</button>
+      <button class="sb2" onclick="addSeat('percussion','Timpani')"><span class="dot" style="background:var(--perc)"></span>Timpani</button>
+      <button class="sb2" onclick="addSeat('percussion','Marimba')"><span class="dot" style="background:var(--perc)"></span>Marimba</button>
+      <button class="sb2" onclick="addSeat('percussion','Vibraphone')"><span class="dot" style="background:var(--perc)"></span>Vibraphone</button>
+    </div>
+    <div class="gh" onclick="toggleGrp(this)">
+      <div class="lft"><span class="dot" style="background:var(--other)"></span><span style="color:var(--other)">Other</span></div>
+      <span class="arr">&#9654;</span>
+    </div>
+    <div class="gb">
+      <button class="sb2" onclick="addSeat('other','Conductor')"><span class="dot" style="background:var(--other)"></span>Conductor</button>
+      <button class="sb2" onclick="addSeat('other','String Bass')"><span class="dot" style="background:var(--other)"></span>String Bass</button>
+      <button class="sb2" onclick="addSeat('other','Electric Bass')"><span class="dot" style="background:var(--other)"></span>Electric Bass</button>
+      <button class="sb2" onclick="addSeat('other','Piano')"><span class="dot" style="background:var(--other)"></span>Piano</button>
+    </div>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Platform</div>
+    <button class="ab bpl" onclick="addPlatform()" style="margin-bottom:0">&#9645; Add Platform</button>
+    <div id="pp">
+      <div style="height:8px"></div>
+      <div class="sl" style="margin-bottom:6px">Selected Platform</div>
+      <div class="pr"><label>Width</label><input type="number" id="p-w" min="40" max="3000" value="200" oninput="updatePlatform()"/><span style="font-size:11px;color:var(--mu)">px</span></div>
+      <div class="pr"><label>Height</label><input type="number" id="p-h" min="20" max="3000" value="80" oninput="updatePlatform()"/><span style="font-size:11px;color:var(--mu)">px</span></div>
+      <button class="ab bd" id="del-plat-btn">&#10005; Delete Platform</button>
+    </div>
+  </div>
+
+  <div class="ss" id="ep">
+    <div class="sl">Selected Seat</div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:3px;font-style:italic">Instrument Label</div>
+    <input type="text" id="el" style="margin-bottom:9px" placeholder="e.g. Flute I"
+      onkeydown="if(event.key==='Enter'){applyEdit();this.blur()}"/>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:3px;font-style:italic">Name Tag (inside circle)</div>
+    <input type="text" id="en" style="margin-bottom:9px" placeholder="e.g. Jane Smith"
+      onkeydown="if(event.key==='Enter'){applyEdit();this.blur()}"/>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:3px;font-style:italic">Section</div>
+    <select id="eg" style="margin-bottom:10px" onchange="applyEdit()">
+      <option value="woodwind">Woodwind</option>
+      <option value="brass">Brass</option>
+      <option value="percussion">Percussion</option>
+      <option value="other">Other</option>
+    </select>
+    <button class="ab bc" onclick="copySeat()">&#10697; Copy <span style="opacity:.4;font-size:11px">(Ctrl+C)</span></button>
+    <button class="ab bd" style="margin-bottom:0" onclick="deleteSelected()">&#10005; Delete <span style="opacity:.4;font-size:11px">(Del)</span></button>
+  </div>
+
+  <div class="ss" id="mp">
+    <div class="sl">Multi-Selection</div>
+    <div id="ms-count" style="font-size:13px;color:var(--mu2);margin-bottom:8px;font-style:italic"></div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:3px;font-style:italic">Change Section</div>
+    <select id="mg" style="margin-bottom:8px">
+      <option value="woodwind">Woodwind</option>
+      <option value="brass">Brass</option>
+      <option value="percussion">Percussion</option>
+      <option value="other">Other</option>
+    </select>
+    <button class="ab bu" onclick="applyMultiGroup()" style="margin-bottom:9px">&#10003; Apply to All Selected</button>
+    <div class="sl" style="margin-bottom:6px">Align</div>
+    <div class="ar">
+      <button class="ab bu" onclick="align('left')">&#8676; Left</button>
+      <button class="ab bu" onclick="align('center')">&#8596; Ctr</button>
+      <button class="ab bu" onclick="align('right')">&#8677; Right</button>
+    </div>
+    <div class="ar">
+      <button class="ab bu" onclick="align('top')">&#8679; Top</button>
+      <button class="ab bu" onclick="align('middle')">&#8597; Mid</button>
+      <button class="ab bu" onclick="align('bottom')">&#8681; Bot</button>
+    </div>
+    <div class="ar">
+      <button class="ab bun" onclick="distribute('h')">&#8646; Horiz</button>
+      <button class="ab bun" onclick="distribute('v')">&#8645; Vert</button>
+    </div>
+    <button class="ab bd" style="margin-top:3px;margin-bottom:0" onclick="deleteMulti()">&#10005; Delete All Selected</button>
+
+    <!-- ── ARRANGE PANEL ── -->
+    <div style="height:10px"></div>
+    <div class="sl" style="margin-bottom:8px">Arrange</div>
+    <div class="arp-tabs">
+      <div class="arp-tab active" id="arp-tab-line" onclick="arpSetMode('line')">Line</div>
+      <div class="arp-tab" id="arp-tab-arc"  onclick="arpSetMode('arc')">Arc</div>
+    </div>
+
+    <!-- Line options -->
+    <div id="arp-line">
+      <div class="arp-row">
+        <label>Direction</label>
+        <select id="arp-dir">
+          <option value="h">Horizontal</option>
+          <option value="v">Vertical</option>
+        </select>
+      </div>
+      <div class="arp-row">
+        <label>Spacing</label>
+        <input type="range" id="arp-line-sp" min="60" max="200" value="95" oninput="$('arp-line-sp-n').value=this.value;arpPreview()"/>
+        <input type="number" id="arp-line-sp-n" min="60" max="200" value="95" style="width:50px"
+          oninput="$('arp-line-sp').value=this.value;arpPreview()"/>
+      </div>
+    </div>
+
+    <!-- Arc options -->
+    <div id="arp-arc" style="display:none">
+      <div class="arp-row">
+        <label>Opening</label>
+        <select id="arp-open">
+          <option value="down">Downward (audience)</option>
+          <option value="up">Upward (conductor)</option>
+        </select>
+      </div>
+      <div class="arp-row">
+        <label>Radius</label>
+        <input type="range" id="arp-radius" min="100" max="800" value="300" oninput="$('arp-radius-n').value=this.value;arpPreview()"/>
+        <input type="number" id="arp-radius-n" min="100" max="800" value="300" style="width:50px"
+          oninput="$('arp-radius').value=this.value;arpPreview()"/>
+      </div>
+      <div class="arp-row">
+        <label>Spread</label>
+        <input type="range" id="arp-spread" min="30" max="180" value="120" oninput="$('arp-spread-n').value=this.value;arpPreview()"/>
+        <input type="number" id="arp-spread-n" min="30" max="180" value="120" style="width:50px"
+          oninput="$('arp-spread').value=this.value;arpPreview()"/>
+      </div>
+    </div>
+
+    <button id="arp-preview-btn" onclick="arpPreview()">&#9654; Preview</button>
+    <button class="ab bu" style="margin-bottom:0" onclick="arpApply()">&#10003; Apply Arrangement</button>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Copy / Paste</div>
+    <button class="ab bc" onclick="copySeat()">&#10697; Copy <span style="opacity:.4;font-size:11px">(Ctrl+C)</span></button>
+    <button class="ab bp" style="margin-bottom:0" onclick="pasteSeat()">&#10702; Paste <span style="opacity:.4;font-size:11px">(Ctrl+V)</span></button>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Section Colors</div>
+    <div class="cr"><label>Woodwind</label><input type="color" id="cc-woodwind" value="#2d7d46" onchange="updateColor('woodwind',this.value)"/></div>
+    <div class="cr"><label>Brass</label><input type="color" id="cc-brass" value="#8a6200" onchange="updateColor('brass',this.value)"/></div>
+    <div class="cr"><label>Percussion</label><input type="color" id="cc-percussion" value="#8b2020" onchange="updateColor('percussion',this.value)"/></div>
+    <div class="cr"><label>Other</label><input type="color" id="cc-other" value="#5a3d8a" onchange="updateColor('other',this.value)"/></div>
+  </div>
+
+  <div class="ss">
+    <div class="sl">Snap &amp; Grid</div>
+    <label class="stog"><input type="checkbox" id="snap-on" checked/>Magnetic snap</label>
+    <div style="font-size:11px;color:var(--mu);margin-top:4px;font-style:italic;line-height:1.7">
+      Arrows: nudge 10px &nbsp;|&nbsp; Shift+Arrows: 50px<br>Alt+Click: duplicate seat
+    </div>
+  </div>
+
+  <div class="ss">
+    <div class="sl">File</div>
+    <button class="ab bex" onclick="saveJSON()">&#8595; Save Layout (JSON)</button>
+    <label class="ab bex" style="cursor:pointer;margin-bottom:0">
+      &#8593; Load Layout (JSON)
+      <input type="file" accept=".json" style="display:none" onchange="loadJSON(this)"/>
+    </label>
+  </div>
+
+  <div class="ss" style="margin-top:auto">
+    <div class="sl">View &amp; Export</div>
+    <div class="zr">
+      <button class="zb" onclick="changeZoom(-.15)">&#8722;</button>
+      <button class="zb" onclick="changeZoom(.15)">+</button>
+      <button class="zb sm" onclick="resetView()">Reset</button>
+    </div>
+    <button class="ab bu" onclick="fitToWindow()">&#9974; Fit to Window <span style="opacity:.4;font-size:11px">(F)</span></button>
+    <button class="ab bex" style="margin-bottom:0" onclick="exportPNG()">&#8595; Export PNG</button>
+  </div>
+</div>
+
+<div id="cw">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+        <path d="M50 0H0V50" fill="none" stroke="#e0dbd0" stroke-width=".5"/>
+      </pattern>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <rect id="bg" width="100%" height="100%" fill="url(#grid)"/>
+    <g id="snap-g"></g>
+    <g id="ghost-g"></g>
+    <g id="plat-g"></g>
+    <g id="world"></g>
+  </svg>
+
+  <div id="le">
+    <span>Label:</span>
+    <input type="text" id="le-lbl" onkeydown="if(event.key==='Enter'){applyLiveLabel();this.blur()}"/>
+    <select id="le-grp" onchange="applyLiveGroup()">
+      <option value="woodwind">Woodwind</option>
+      <option value="brass">Brass</option>
+      <option value="percussion">Percussion</option>
+      <option value="other">Other</option>
+    </select>
+    <button class="lb la" onclick="applyLiveLabel()">&#10003;</button>
+    <button class="lb ld" onclick="deleteSelected()">&#10005;</button>
+    <button class="lb lx" onclick="deselect()">&#215;</button>
+  </div>
+
+  <button id="ms-btn" onclick="toggleMultiSelectMode()">&#9745; Multi-Select</button>
+
+  <div id="legend">
+    <div class="lr" id="leg-woodwind" style="color:#2d7d46"><span class="ldot" style="background:#2d7d46"></span>Woodwind</div>
+    <div class="lr" id="leg-brass"    style="color:#8a6200"><span class="ldot" style="background:#8a6200"></span>Brass</div>
+    <div class="lr" id="leg-percussion" style="color:#8b2020"><span class="ldot" style="background:#8b2020"></span>Percussion</div>
+    <div class="lr" id="leg-other"   style="color:#5a3d8a"><span class="ldot" style="background:#5a3d8a"></span>Other</div>
+    <div class="lr" style="color:var(--plat)"><span class="ldot sq" style="background:var(--plat);opacity:.5"></span>Platform</div>
+  </div>
+
+  <div id="hint">
+    Click — select &amp; edit<br>
+    Dbl-click — rename<br>
+    Shift+Click — multi-select<br>
+    Alt+Click — duplicate<br>
+    Drag empty area — pan view<br>
+    Right-click — delete<br>
+    Arrows — nudge<br>
+    Scroll — zoom
+  </div>
+  <div id="zbadge">Zoom: <span id="zval">100%</span></div>
+  <div id="toast"></div>
+</div>
+
+<script>
+'use strict';
+// ── CONSTANTS ────────────────────────────────────────────────────────
+const NS='http://www.w3.org/2000/svg', R=40, SNAP_D=24, GRID=10;
+const FONT="'Times New Roman',Times,serif", COND_Y=80;
+
+// Mutable section colours
+const COL={
+  woodwind:  {c:'#2d7d46',bg:'#eef8f1',bd:'#2d7d46'},
+  brass:     {c:'#8a6200',bg:'#fdf7e8',bd:'#8a6200'},
+  percussion:{c:'#8b2020',bg:'#fdf0f0',bd:'#8b2020'},
+  other:     {c:'#5a3d8a',bg:'#f5f0fd',bd:'#5a3d8a'}
+};
+function hexLight(h){
+  const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return`rgba(${r},${g},${b},0.09)`;
+}
+
+// ── PRESET: Small Wind Ensemble ──────────────────────────────────────
+function buildPreset(){
+  let n=1; const s=[], cx=500;
+  const mk=(x,y,g,l)=>s.push({id:n++,x:Math.round(x),y:Math.round(y),group:g,label:l,note:''});
+  mk(cx,COND_Y,'other','Conductor');
+  mk(cx-190,COND_Y+140,'woodwind','Flute I');  mk(cx-110,COND_Y+215,'woodwind','Flute II');
+  mk(cx+190,COND_Y+140,'woodwind','Cl. I');    mk(cx+110,COND_Y+215,'woodwind','Cl. II');
+  mk(cx-135,COND_Y+330,'woodwind','Tenor Sax');
+  mk(cx-45, COND_Y+330,'woodwind','Alto Sax III');
+  mk(cx+45, COND_Y+330,'woodwind','Alto Sax II');
+  mk(cx+135,COND_Y+330,'woodwind','Alto Sax I');
+  ['Tuba II','Tuba I','Euphonium II','Euphonium I','Trombone II','Trombone I','Trumpet I','Trumpet II','Trumpet III']
+    .forEach((l,i,a)=>mk(cx-(a.length-1)*95/2+i*95,COND_Y+490,'brass',l));
+  ['Timpani','Bass Drum','Snare','Marimba','Vibraphone']
+    .forEach((l,i,a)=>mk(cx-(a.length-1)*95/2+i*95,COND_Y+600,'percussion',l));
+  return s;
+}
+
+// ── PRESET: Wind Band (based on reference chart) ─────────────────────
+function buildWindBand(){
+  let n=1; const s=[], cx=600, sp=92;
+  const mk=(x,y,g,l)=>s.push({id:n++,x:Math.round(x),y:Math.round(y),group:g,label:l,note:''});
+
+  // Conductor
+  mk(cx, COND_Y, 'other','Conductor');
+
+  // Row 1: Flute I ×2, Piccolo, Oboe, Cl. I ×3  (7 seats)
+  const r1=['Flute I','Flute I','Piccolo','Oboe','Cl. I','Cl. I','Cl. I'];
+  r1.forEach((l,i)=>mk(cx-(r1.length-1)*sp/2+i*sp, COND_Y+130, 'woodwind', l));
+
+  // Row 2: Flute II ×3, Cl. II ×3  (6 seats, slightly indented)
+  const r2=['Flute II','Flute II','Flute II','Cl. II','Cl. II','Cl. II'];
+  r2.forEach((l,i)=>mk(cx-(r2.length-1)*sp/2+i*sp, COND_Y+230, 'woodwind', l));
+
+  // Row 3: Baritone Sax, Tenor Sax, Alto Sax II, Alto Sax I, Cl. III ×3  (7 seats)
+  const r3=['Baritone Saxophone','Tenor Sax','Alto Sax II','Alto Sax I','Cl. III','Cl. III','Cl. III'];
+  r3.forEach((l,i)=>mk(cx-(r3.length-1)*sp/2+i*sp, COND_Y+330, 'woodwind', l));
+
+  // Row 4: Tuba ×2, Euphonium ×2, Horn I–IV  (8 seats)
+  const r4=['Tuba','Tuba','Euphonium','Euphonium','Horn I','Horn II','Horn III','Horn IV'];
+  r4.forEach((l,i)=>mk(cx-(r4.length-1)*sp/2+i*sp, COND_Y+450, 'brass', l));
+
+  // Row 5: Trombone III, II ×2, I ×2, Trumpet I ×2, II ×2, III ×2  (11 seats, wider)
+  const r5=['Trombone III','Trombone II','Trombone II','Trombone I','Trombone I',
+            'Trumpet I','Trumpet I','Trumpet II','Trumpet II','Trumpet III','Trumpet III'];
+  r5.forEach((l,i)=>mk(cx-(r5.length-1)*sp/2+i*sp, COND_Y+550, 'brass', l));
+
+  // Row 6: Perc  (5 seats, centred)
+  const r6=['Timpani','Bass Drum','Snare Drum','Marimba','Vibraphone'];
+  r6.forEach((l,i)=>mk(cx-(r6.length-1)*sp/2+i*sp, COND_Y+660, 'percussion', l));
+
+  return s;
+}
+
+// ── STATE ────────────────────────────────────────────────────────────
+let seats=[], platforms=[], history=[], future=[];
+let clipboard=null, idC=1, platIdC=1;
+let selId=null, selIds=new Set(), selPlatId=null;
+let seatDrag=false, platDragId=null, platResize=false, panning=false, multiDrag=false;
+let dDX=0,dDY=0,pSX=0,pSY=0,pRSX=0,pRSY=0,pRW=0,pRH=0,platDOX=0,platDOY=0;
+let multiDragOffsets=[]; // [{id, dx, dy}] for group drag
+let zoom=1, pan={x:0,y:0};
+// Touch-specific state
+let touchPanning=false, pinching=false, pinchStartDist=1, pinchStartZoom=1;
+let pinchMid={x:0,y:0}, pinchStartPan={x:0,y:0};
+let touchLP={timer:null,x:0,y:0}; // long-press tracker (duplicate on hold)
+let multiSelectMode=false; // tablet/mobile: tap-to-toggle selection, no Shift key needed
+
+const $=id=>document.getElementById(id);
+const svgEl=$('svg'), world=$('world'), platG=$('plat-g'), snapG=$('snap-g'), ghostG=$('ghost-g'), bgEl=$('bg');
+
+// ── INTERACTION RESET ────────────────────────────────────────────────
+function clearDrag(){seatDrag=false;platDragId=null;platResize=false;panning=false;multiDrag=false;multiDragOffsets=[];snapG.innerHTML='';ghostG.innerHTML='';}
+
+// ── ACCORDION ────────────────────────────────────────────────────────
+function toggleGrp(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open');}
+
+// ── MOBILE SIDEBAR DRAWER ────────────────────────────────────────────
+function toggleSidebar(){$('sb').classList.toggle('open');$('sb-backdrop').classList.toggle('vis');}
+function closeSidebar(){$('sb').classList.remove('open');$('sb-backdrop').classList.remove('vis');}
+function isMobile(){return window.innerWidth<=820;}
+
+// ── MULTI-SELECT MODE (tablet/mobile) ────────────────────────────────
+// Toggle-based alternative to Shift+Click, for touch devices with no modifier keys.
+function toggleMultiSelectMode(){
+  multiSelectMode=!multiSelectMode;
+  $('ms-btn').classList.toggle('active',multiSelectMode);
+  if(multiSelectMode){
+    if(selId)deselect();
+    toast('Multi-select on — tap seats to add/remove.');
+  }else{
+    toast('Multi-select off.');
+  }
+}
+function toggleSeatInSelection(id){
+  selId=null;
+  selIds.has(id)?selIds.delete(id):selIds.add(id);
+  refreshRings();
+  if(selIds.size===0){
+    document.body.classList.remove('ep','pp','mp');$('le').classList.remove('vis');
+  }else{
+    document.body.classList.remove('ep','pp');document.body.classList.add('mp');
+    $('ms-count').textContent=`${selIds.size} seat${selIds.size>1?'s':''} selected`;
+    $('le').classList.remove('vis');
+  }
+}
+
+// ── COLOUR ───────────────────────────────────────────────────────────
+function updateColor(g,hex){
+  COL[g].c=hex;COL[g].bd=hex;COL[g].bg=hexLight(hex);
+  document.documentElement.style.setProperty('--'+g,hex);
+  renderSeats();updateLegend();
+}
+function updateLegend(){
+  ['woodwind','brass','percussion','other'].forEach(g=>{
+    const r=$('leg-'+g);if(!r)return;
+    r.style.color=COL[g].c;r.querySelector('.ldot').style.background=COL[g].c;
+  });
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────
+function toW(e){const r=svgEl.getBoundingClientRect();return{x:(e.clientX-r.left-pan.x)/zoom,y:(e.clientY-r.top-pan.y)/zoom};}
+function applyTx(){
+  const t=`translate(${pan.x},${pan.y}) scale(${zoom})`;
+  world.setAttribute('transform',t);platG.setAttribute('transform',t);snapG.setAttribute('transform',t);ghostG.setAttribute('transform',t);
+  $('zval').textContent=Math.round(zoom*100)+'%';
+}
+function getSeat(id){return seats.find(s=>s.id===id);}
+function overlaps(x,y,ex){return seats.some(s=>s.id!==ex&&Math.hypot(s.x-x,s.y-y)<R*1.95);}
+
+// Snap to: seat centres, midpoints between seat pairs, platform edges
+function snapXY(rx,ry,ex=[]){
+  if(!$('snap-on').checked)return{x:Math.round(rx/GRID)*GRID,y:Math.round(ry/GRID)*GRID};
+  const oth=seats.filter(s=>!ex.includes(s.id));
+  let bx=Math.round(rx/GRID)*GRID,by=Math.round(ry/GRID)*GRID,dx=SNAP_D,dy=SNAP_D;
+  for(const o of oth){
+    if(Math.abs(rx-o.x)<dx){bx=o.x;dx=Math.abs(rx-o.x);}
+    if(Math.abs(ry-o.y)<dy){by=o.y;dy=Math.abs(ry-o.y);}
+  }
+  for(let i=0;i<oth.length;i++)for(let j=i+1;j<oth.length;j++){
+    const mx=(oth[i].x+oth[j].x)/2,my=(oth[i].y+oth[j].y)/2;
+    if(Math.abs(rx-mx)<dx){bx=mx;dx=Math.abs(rx-mx);}
+    if(Math.abs(ry-my)<dy){by=my;dy=Math.abs(ry-my);}
+  }
+  for(const p of platforms){
+    for(const v of[p.x,p.x+p.w/2,p.x+p.w])if(Math.abs(rx-v)<dx){bx=v;dx=Math.abs(rx-v);}
+    for(const v of[p.y,p.y+p.h/2,p.y+p.h])if(Math.abs(ry-v)<dy){by=v;dy=Math.abs(ry-v);}
+  }
+  return{x:Math.round(bx),y:Math.round(by)};
+}
+function drawGuides(sx,sy,ex=[]){
+  snapG.innerHTML='';
+  if(!$('snap-on').checked)return;
+  const oth=seats.filter(s=>!ex.includes(s.id));
+  const mk=(x1,y1,x2,y2)=>{
+    const l=document.createElementNS(NS,'line');
+    ['x1','y1','x2','y2'].forEach((a,i)=>l.setAttribute(a,[x1,y1,x2,y2][i]));
+    l.setAttribute('stroke','rgba(46,109,164,0.28)');l.setAttribute('stroke-width','1');
+    l.setAttribute('stroke-dasharray','5,3');snapG.appendChild(l);
+  };
+  if(oth.some(o=>Math.abs(sx-o.x)<SNAP_D+2)||platforms.some(p=>[p.x,p.x+p.w/2,p.x+p.w].some(v=>Math.abs(sx-v)<SNAP_D+2)))mk(sx,-9999,sx,9999);
+  if(oth.some(o=>Math.abs(sy-o.y)<SNAP_D+2)||platforms.some(p=>[p.y,p.y+p.h/2,p.y+p.h].some(v=>Math.abs(sy-v)<SNAP_D+2)))mk(-9999,sy,9999,sy);
+}
+
+let _tt;
+function toast(m){const t=$('toast');t.textContent=m;t.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>t.style.opacity='0',2200);}
+
+// ── HISTORY ──────────────────────────────────────────────────────────
+function snap(){
+  history.push({s:JSON.parse(JSON.stringify(seats)),p:JSON.parse(JSON.stringify(platforms))});
+  if(history.length>100)history.shift();future=[];
+}
+function undo(){
+  if(!history.length){toast('Nothing to undo.');return;}
+  future.push({s:JSON.parse(JSON.stringify(seats)),p:JSON.parse(JSON.stringify(platforms))});
+  const h=history.pop();seats=h.s;platforms=h.p;
+  clearDrag();deselect();renderAll();toast('Undone.');
+}
+function redo(){
+  if(!future.length){toast('Nothing to redo.');return;}
+  history.push({s:JSON.parse(JSON.stringify(seats)),p:JSON.parse(JSON.stringify(platforms))});
+  const h=future.pop();seats=h.s;platforms=h.p;
+  clearDrag();deselect();renderAll();toast('Redone.');
+}
+
+// ── SEAT TEXT ────────────────────────────────────────────────────────
+function seatText(seat,g){
+  const F=document.createDocumentFragment();
+  const mkT=(attr,extra)=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('text-anchor','middle');t.setAttribute('font-family',FONT);
+    t.setAttribute('pointer-events','none');
+    Object.entries({...attr,...extra}).forEach(([k,v])=>t.setAttribute(k,v));
+    return t;
+  };
+  if(seat.note&&seat.note.trim()){
+    // Instrument label small above
+    const it=mkT({'font-size':'9.5','fill':g.c,'dominant-baseline':'middle','y':'-14','opacity':'0.75'},{});
+    it.textContent=seat.label.length>12?seat.label.slice(0,11)+'…':seat.label;
+    F.appendChild(it);
+    // Name centred
+    const w=seat.note.trim().split(' ');let n1=seat.note.trim(),n2='';
+    if(n1.length>10&&w.length>=2){const m=Math.ceil(w.length/2);n1=w.slice(0,m).join(' ');n2=w.slice(m).join(' ');}
+    const nt=mkT({'font-weight':'bold','fill':g.c},{});
+    if(n2){
+      const fs=Math.min(12,140/Math.max(n1.length,n2.length));
+      [[n1,'2'],[n2,'15']].forEach(([t,dy])=>{const ts=document.createElementNS(NS,'tspan');ts.setAttribute('x','0');ts.setAttribute('dy',dy);ts.setAttribute('font-size',fs);ts.textContent=t;nt.appendChild(ts);});
+    }else{
+      const fs=n1.length>10?10:n1.length>7?12:14;
+      nt.setAttribute('font-size',fs);nt.setAttribute('dominant-baseline','middle');nt.setAttribute('y','6');
+      nt.textContent=n1.length>13?n1.slice(0,12)+'…':n1;
+    }
+    F.appendChild(nt);
+  }else{
+    const w=seat.label.split(' ');let l1=seat.label,l2='';
+    if(seat.label.length>9&&w.length>=2){const m=Math.ceil(w.length/2);l1=w.slice(0,m).join(' ');l2=w.slice(m).join(' ');}
+    const tx=mkT({'font-weight':'bold','fill':g.c},{});
+    if(l2){
+      const fs=Math.min(13,148/Math.max(l1.length,l2.length));
+      [[l1,'-7'],[l2,'16']].forEach(([t,dy])=>{const ts=document.createElementNS(NS,'tspan');ts.setAttribute('x','0');ts.setAttribute('dy',dy);ts.setAttribute('font-size',fs);ts.textContent=t;tx.appendChild(ts);});
+    }else{
+      const fs=seat.label.length>10?10:seat.label.length>7?12:14;
+      tx.setAttribute('font-size',fs);tx.setAttribute('dominant-baseline','middle');
+      tx.textContent=seat.label.length>16?seat.label.slice(0,15)+'…':seat.label;
+    }
+    F.appendChild(tx);
+  }
+  return F;
+}
+
+// ── SEAT ELEMENT ─────────────────────────────────────────────────────
+// Only captures id — live data always via getSeat(id)
+function makeSeat(sd){
+  const id=sd.id, g=COL[sd.group];
+  const el=document.createElementNS(NS,'g');
+  el.setAttribute('data-id',id);el.setAttribute('transform',`translate(${sd.x},${sd.y})`);
+  el.style.cursor='grab';
+  const isSel=id===selId,isMul=selIds.has(id);
+  const c=document.createElementNS(NS,'circle');
+  c.setAttribute('r',R);c.setAttribute('fill',g.bg);
+  c.setAttribute('stroke',isSel?'#2e6da4':isMul?'#8a6200':g.bd);
+  c.setAttribute('stroke-width',(isSel||isMul)?'3.2':'2.5');
+  c.setAttribute('class','so');
+  if(isSel)c.setAttribute('filter','url(#glow)');
+  el.appendChild(c);el.appendChild(seatText(sd,g));
+
+  el.addEventListener('mousedown',e=>{
+    e.stopPropagation();e.preventDefault();
+    if(e.altKey){
+      // Alt+Click: duplicate — no auto-select
+      const src=getSeat(id);if(!src)return;
+      snap();seats.push({...src,id:idC++,x:src.x+R*2.2,y:src.y});
+      clearDrag();deselect();renderAll();toast('Duplicated. Click to select.');
+      return;
+    }
+    if(e.shiftKey||multiSelectMode){
+      // Shift+click, or Multi-Select mode active: toggle this seat in the selection
+      clearDrag();
+      toggleSeatInSelection(id);
+      return;
+    }
+    // If this seat is part of a multi-selection, start group drag
+    if(selIds.size>1&&selIds.has(id)){
+      snap();
+      const wc=toW(e);
+      multiDragOffsets=seats.filter(s=>selIds.has(s.id)).map(s=>({id:s.id,dx:wc.x-s.x,dy:wc.y-s.y}));
+      multiDrag=true;
+      return;
+    }
+    // Normal single-seat drag
+    snap();selIds.clear();selPlatId=null;
+    const wc=toW(e);dDX=wc.x-sd.x;dDY=wc.y-sd.y;
+    seatDrag=true;activate(id);
+  });
+  el.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    e.stopPropagation();
+    const t=e.touches[0];
+
+    if(multiSelectMode){
+      toggleSeatInSelection(id);
+      return;
+    }
+
+    const now=Date.now();
+    const isDouble=el._lastTap&&(now-el._lastTap<350);
+    el._lastTap=now;
+
+    if(isDouble){
+      // Double-tap: rename (mirrors dblclick)
+      selIds.clear();activate(id);
+      setTimeout(()=>{const i=$('le-lbl');i.focus();i.select();},30);
+      return;
+    }
+
+    // Long-press: duplicate (mirrors Alt+Click)
+    touchLP.x=t.clientX;touchLP.y=t.clientY;
+    touchLP.timer=setTimeout(()=>{
+      touchLP.timer=null;
+      if(navigator.vibrate)navigator.vibrate(25);
+      const src=getSeat(id);if(!src)return;
+      snap();seats.push({...src,id:idC++,x:src.x+R*2.2,y:src.y});
+      clearDrag();deselect();renderAll();toast('Duplicated. Tap to select.');
+    },550);
+
+    if(selIds.size>1&&selIds.has(id)){
+      snap();
+      const wc=toW({clientX:t.clientX,clientY:t.clientY});
+      multiDragOffsets=seats.filter(s=>selIds.has(s.id)).map(s=>({id:s.id,dx:wc.x-s.x,dy:wc.y-s.y}));
+      multiDrag=true;
+    }else{
+      snap();selIds.clear();selPlatId=null;
+      const wc=toW({clientX:t.clientX,clientY:t.clientY});
+      dDX=wc.x-sd.x;dDY=wc.y-sd.y;
+      seatDrag=true;activate(id);
+    }
+  },{passive:true});
+  el.addEventListener('dblclick',e=>{
+    e.stopPropagation();e.preventDefault();
+    selIds.clear();activate(id);
+    setTimeout(()=>{const i=$('le-lbl');i.focus();i.select();},30);
+  });
+  el.addEventListener('contextmenu',e=>{
+    e.preventDefault();e.stopPropagation();
+    snap();seats=seats.filter(s=>s.id!==id);el.remove();
+    selIds.delete(id);if(selId===id)deselect();toast('Seat deleted.');
+  });
+  return el;
+}
+
+// ── PLATFORM ELEMENT ─────────────────────────────────────────────────
+function makePlat(p){
+  const sel=p.id===selPlatId;
+  const g=document.createElementNS(NS,'g');
+  g.setAttribute('data-pid',p.id);g.setAttribute('transform',`translate(${p.x},${p.y})`);
+  g.style.cursor='grab';
+  const r=document.createElementNS(NS,'rect');
+  r.setAttribute('width',p.w);r.setAttribute('height',p.h);r.setAttribute('rx','4');
+  r.setAttribute('fill','rgba(138,112,96,0.10)');
+  r.setAttribute('stroke',sel?'#5a3d8a':'rgba(138,112,96,0.55)');
+  r.setAttribute('stroke-width',sel?'2.5':'1.5');r.setAttribute('stroke-dasharray','7,4');
+  const H=14,h=document.createElementNS(NS,'rect');
+  h.setAttribute('x',p.w-H);h.setAttribute('y',p.h-H);h.setAttribute('width',H);h.setAttribute('height',H);
+  h.setAttribute('rx','2');h.setAttribute('fill',sel?'rgba(90,61,138,0.4)':'rgba(138,112,96,0.3)');
+  h.setAttribute('cursor','se-resize');
+  g.appendChild(r);g.appendChild(h);
+  h.addEventListener('mousedown',e=>{
+    e.stopPropagation();e.preventDefault();
+    selectPlat(p.id);snap();platResize=true;pRSX=e.clientX;pRSY=e.clientY;pRW=p.w;pRH=p.h;
+  });
+  g.addEventListener('mousedown',e=>{
+    if(e.target===h)return;
+    e.stopPropagation();e.preventDefault();
+    selectPlat(p.id);snap();const wc=toW(e);platDragId=p.id;platDOX=wc.x-p.x;platDOY=wc.y-p.y;
+  });
+  h.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    e.stopPropagation();
+    selectPlat(p.id);snap();platResize=true;
+    const t=e.touches[0];pRSX=t.clientX;pRSY=t.clientY;pRW=p.w;pRH=p.h;
+  },{passive:true});
+  g.addEventListener('touchstart',e=>{
+    if(e.target===h||e.touches.length!==1)return;
+    e.stopPropagation();
+    selectPlat(p.id);snap();
+    const t=e.touches[0];
+    const wc=toW({clientX:t.clientX,clientY:t.clientY});
+    platDragId=p.id;platDOX=wc.x-p.x;platDOY=wc.y-p.y;
+  },{passive:true});
+  g.addEventListener('contextmenu',e=>{
+    e.preventDefault();e.stopPropagation();
+    snap();platforms=platforms.filter(x=>x.id!==p.id);g.remove();
+    if(selPlatId===p.id){selPlatId=null;document.body.classList.remove('pp');}toast('Platform deleted.');
+  });
+  return g;
+}
+function rebuildPlat(p){const o=platG.querySelector(`[data-pid="${p.id}"]`);if(o)o.remove();platG.appendChild(makePlat(p));}
+
+// ── RENDER ───────────────────────────────────────────────────────────
+// renderAll: rebuild seats + platforms (title is persistent, set once)
+function renderAll(){
+  world.querySelectorAll('[data-id]').forEach(e=>e.remove());
+  platG.innerHTML='';
+  platforms.forEach(p=>platG.appendChild(makePlat(p)));
+  seats.forEach(s=>world.appendChild(makeSeat(s)));
+}
+// renderSeats: rebuild only seats (used by colour update)
+function renderSeats(){
+  world.querySelectorAll('[data-id]').forEach(e=>e.remove());
+  seats.forEach(s=>world.appendChild(makeSeat(s)));
+}
+function initWorld(){
+  world.innerHTML='';platG.innerHTML='';
+  const tt=document.createElementNS(NS,'text');
+  tt.setAttribute('id','ttl');tt.setAttribute('x','500');tt.setAttribute('y',COND_Y-65);
+  tt.setAttribute('text-anchor','middle');tt.setAttribute('font-size','16');
+  tt.setAttribute('fill','#8a7a60');tt.setAttribute('font-family',FONT);
+  tt.setAttribute('font-style','italic');tt.setAttribute('letter-spacing','3');
+  tt.textContent=$('chart-title').value.toUpperCase();
+  world.appendChild(tt);
+  platforms.forEach(p=>platG.appendChild(makePlat(p)));
+  seats.forEach(s=>world.appendChild(makeSeat(s)));
+}
+
+// ── SELECTION ────────────────────────────────────────────────────────
+function activate(id){
+  selId=id;selPlatId=null;selIds.clear();
+  const s=getSeat(id);if(!s)return;
+  document.body.classList.remove('pp','mp');document.body.classList.add('ep');
+  refreshRings();
+  $('el').value=s.label;$('en').value=s.note||'';$('eg').value=s.group;
+  $('le-lbl').value=s.label;$('le-grp').value=s.group;
+  $('le').classList.add('vis');
+}
+function selectPlat(id){
+  selId=null;selIds.clear();selPlatId=id;
+  document.body.classList.remove('ep','mp');document.body.classList.add('pp');
+  $('le').classList.remove('vis');refreshRings();
+  platforms.forEach(p=>rebuildPlat(p)); // update outlines
+  const p=platforms.find(x=>x.id===id);if(!p)return;
+  $('p-w').value=Math.round(p.w);$('p-h').value=Math.round(p.h);
+}
+function updateSidePanel(){
+  if(selIds.size>=2){
+    selId=null;document.body.classList.remove('ep','pp');document.body.classList.add('mp');
+    $('ms-count').textContent=`${selIds.size} seats selected`;$('le').classList.remove('vis');
+  }else if(selIds.size===1){
+    const id=[...selIds][0];selIds.clear();activate(id);
+  }else deselect();
+}
+function deselect(){
+  selId=null;selIds.clear();selPlatId=null;
+  document.body.classList.remove('ep','pp','mp');
+  $('le').classList.remove('vis');clearDrag();refreshRings();
+  ghostG.innerHTML='';arpPreviewPositions=[];
+}
+function refreshRings(){
+  world.querySelectorAll('.so').forEach(el=>{
+    const pid=+el.parentElement.getAttribute('data-id'),s=getSeat(pid);if(!s)return;
+    const iS=s.id===selId,iM=selIds.has(s.id);
+    el.setAttribute('stroke',iS?'#2e6da4':iM?'#8a6200':COL[s.group].bd);
+    el.setAttribute('stroke-width',(iS||iM)?'3.2':'2.5');
+    if(iS)el.setAttribute('filter','url(#glow)');else el.removeAttribute('filter');
+  });
+}
+
+// ── EDIT OPS ─────────────────────────────────────────────────────────
+function applyLiveLabel(){
+  if(!selId)return;const s=getSeat(selId);if(!s)return;
+  const v=$('le-lbl').value.trim();if(!v)return;
+  s.label=v;$('el').value=v;redrawSeat(selId);
+}
+function applyLiveGroup(){
+  if(!selId)return;const s=getSeat(selId);if(!s)return;
+  s.group=$('le-grp').value;$('eg').value=s.group;redrawSeat(selId);
+}
+function applyEdit(){
+  if(!selId)return;const s=getSeat(selId);if(!s)return;
+  const v=$('el').value.trim();if(!v)return;
+  s.label=v;s.note=$('en').value.trim();s.group=$('eg').value;
+  $('le-lbl').value=v;$('le-grp').value=s.group;redrawSeat(selId);
+}
+// Efficient in-place redraw: only update circle style + text
+function redrawSeat(id){
+  const s=getSeat(id);if(!s)return;
+  const el=world.querySelector(`[data-id="${id}"]`);if(!el)return;
+  const g=COL[s.group];
+  const c=el.querySelector('circle');
+  c.setAttribute('fill',g.bg);c.setAttribute('stroke',id===selId?'#2e6da4':g.bd);
+  el.querySelectorAll('text').forEach(t=>t.remove());
+  el.appendChild(seatText(s,g));
+}
+function deleteSelected(){
+  if(!selId)return;snap();seats=seats.filter(s=>s.id!==selId);
+  const el=world.querySelector(`[data-id="${selId}"]`);if(el)el.remove();
+  deselect();toast('Seat deleted.');
+}
+
+// ── MULTI-SELECT OPS ─────────────────────────────────────────────────
+function applyMultiGroup(){
+  if(!selIds.size)return;snap();const g=$('mg').value;
+  selIds.forEach(id=>{const s=getSeat(id);if(s)s.group=g;});
+  renderAll();toast('Section updated.');
+}
+function deleteMulti(){
+  if(!selIds.size)return;snap();const ids=[...selIds];
+  seats=seats.filter(s=>!ids.includes(s.id));
+  ids.forEach(id=>{const el=world.querySelector(`[data-id="${id}"]`);if(el)el.remove();});
+  deselect();toast(`Deleted ${ids.length} seats.`);
+}
+function selSeats(){return seats.filter(s=>selIds.has(s.id));}
+function align(dir){
+  const sel=selSeats();if(sel.length<2)return;snap();
+  const xs=sel.map(s=>s.x),ys=sel.map(s=>s.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+  sel.forEach(s=>{
+    if(dir==='left')s.x=minX;else if(dir==='right')s.x=maxX;else if(dir==='center')s.x=cx;
+    else if(dir==='top')s.y=minY;else if(dir==='bottom')s.y=maxY;else if(dir==='middle')s.y=cy;
+    const el=world.querySelector(`[data-id="${s.id}"]`);if(el)el.setAttribute('transform',`translate(${s.x},${s.y})`);
+  });toast('Aligned.');
+}
+function distribute(axis){
+  const sel=selSeats();if(sel.length<3)return;snap();
+  if(axis==='h'){
+    sel.sort((a,b)=>a.x-b.x);const step=(sel[sel.length-1].x-sel[0].x)/(sel.length-1);
+    sel.forEach((s,i)=>{s.x=Math.round(sel[0].x+i*step);const el=world.querySelector(`[data-id="${s.id}"]`);if(el)el.setAttribute('transform',`translate(${s.x},${s.y})`);});
+  }else{
+    sel.sort((a,b)=>a.y-b.y);const step=(sel[sel.length-1].y-sel[0].y)/(sel.length-1);
+    sel.forEach((s,i)=>{s.y=Math.round(sel[0].y+i*step);const el=world.querySelector(`[data-id="${s.id}"]`);if(el)el.setAttribute('transform',`translate(${s.x},${s.y})`);});
+  }toast('Distributed.');
+}
+
+// ── ARRANGE ON ARC / LINE ────────────────────────────────────────────
+let arpMode='line', arpPreviewPositions=[];
+
+function arpSetMode(m){
+  arpMode=m;
+  $('arp-tab-line').classList.toggle('active',m==='line');
+  $('arp-tab-arc').classList.toggle('active',m==='arc');
+  $('arp-line').style.display=m==='line'?'':'none';
+  $('arp-arc').style.display=m==='arc'?'':'none';
+  arpPreview();
+}
+
+function arpCompute(){
+  const sel=selSeats();if(sel.length<2)return[];
+  const sorted=[...sel].sort((a,b)=>a.x-b.x);
+  const cx=sorted.reduce((s,o)=>s+o.x,0)/sorted.length;
+  const cy=sorted.reduce((s,o)=>s+o.y,0)/sorted.length;
+  const n=sorted.length;
+
+  if(arpMode==='line'){
+    const sp=+$('arp-line-sp').value||95;
+    const dir=$('arp-dir').value;
+    const totalW=(n-1)*sp;
+    return sorted.map((s,i)=>
+      dir==='h'?{x:Math.round(cx-totalW/2+i*sp),y:Math.round(cy)}
+               :{x:Math.round(cx),y:Math.round(cy-totalW/2+i*sp)}
+    );
+  }else{
+    const radius=+$('arp-radius').value||300;
+    const spreadRad=(+$('arp-spread').value||120)*Math.PI/180;
+    const opening=$('arp-open').value;
+    const arcCY=opening==='down'?cy-radius:cy+radius;
+    const startAngle=opening==='down'?Math.PI/2-spreadRad/2:-(Math.PI/2)-spreadRad/2;
+    return sorted.map((s,i)=>{
+      const angle=startAngle+(n===1?0:i/(n-1))*spreadRad;
+      return{x:Math.round(cx+radius*Math.cos(angle)),y:Math.round(arcCY+radius*Math.sin(angle))};
+    });
+  }
+}
+
+function arpPreview(){
+  ghostG.innerHTML='';arpPreviewPositions=[];
+  const positions=arpCompute();if(!positions.length)return;
+  arpPreviewPositions=positions;
+  const sel=[...selSeats()].sort((a,b)=>a.x-b.x);
+  // Draw arrows first (behind)
+  positions.forEach((pos,i)=>{
+    const s=sel[i];if(!s)return;
+    const ln=document.createElementNS(NS,'line');
+    ln.setAttribute('x1',s.x);ln.setAttribute('y1',s.y);
+    ln.setAttribute('x2',pos.x);ln.setAttribute('y2',pos.y);
+    ln.setAttribute('stroke','rgba(46,109,164,0.22)');ln.setAttribute('stroke-width','1');
+    ln.setAttribute('stroke-dasharray','4,3');ghostG.appendChild(ln);
+  });
+  // Draw ghost circles on top
+  positions.forEach((pos,i)=>{
+    const s=sel[i];if(!s)return;
+    const g=COL[s.group];
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',pos.x);c.setAttribute('cy',pos.y);c.setAttribute('r',R);
+    c.setAttribute('fill',g.bg);c.setAttribute('stroke',g.c);
+    c.setAttribute('stroke-width','1.5');c.setAttribute('stroke-dasharray','6,3');
+    c.setAttribute('opacity','0.45');ghostG.appendChild(c);
+    const tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',pos.x);tx.setAttribute('y',pos.y);
+    tx.setAttribute('text-anchor','middle');tx.setAttribute('dominant-baseline','middle');
+    tx.setAttribute('font-size','10');tx.setAttribute('font-family',FONT);
+    tx.setAttribute('fill',g.c);tx.setAttribute('opacity','0.45');
+    tx.setAttribute('pointer-events','none');
+    tx.textContent=s.label.length>10?s.label.slice(0,9)+'…':s.label;
+    ghostG.appendChild(tx);
+  });
+}
+
+function arpApply(){
+  if(!arpPreviewPositions.length){arpPreview();return;}
+  const positions=arpPreviewPositions;
+  const sel=[...selSeats()].sort((a,b)=>a.x-b.x);
+  if(sel.length!==positions.length)return;
+  snap();
+  sel.forEach((s,i)=>{
+    s.x=positions[i].x;s.y=positions[i].y;
+    const el=world.querySelector(`[data-id="${s.id}"]`);
+    if(el)el.setAttribute('transform',`translate(${s.x},${s.y})`);
+  });
+  ghostG.innerHTML='';arpPreviewPositions=[];
+  toast('Arrangement applied.');
+}
+
+// ── GHOST EQUIDISTANT HINT (single seat drag) ────────────────────────
+function updateGhostHint(dragId,sx,sy){
+  ghostG.innerHTML='';
+  const others=seats.filter(s=>s.id!==dragId);
+  if(others.length<2)return;
+  const BAND=R*2.5;
+  const rowH=others.filter(o=>Math.abs(o.y-sy)<BAND).sort((a,b)=>a.x-b.x);
+  const rowV=others.filter(o=>Math.abs(o.x-sx)<BAND).sort((a,b)=>a.y-b.y);
+  const row=rowH.length>=rowV.length?rowH:rowV;
+  if(row.length<2)return;
+  const isH=row===rowH;
+  const coords=isH?row.map(o=>o.x):row.map(o=>o.y);
+  const gaps=[];for(let i=1;i<coords.length;i++)gaps.push(coords[i]-coords[i-1]);
+  const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+  if(Math.abs(avgGap)<R)return;
+  const hints=isH
+    ?[{x:coords[0]-avgGap,y:row[0].y},{x:coords[coords.length-1]+avgGap,y:row[0].y}]
+    :[{x:row[0].x,y:coords[0]-avgGap},{x:row[0].x,y:coords[coords.length-1]+avgGap}];
+  hints.forEach(h=>{
+    if(Math.hypot(h.x-sx,h.y-sy)>R*7)return;
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',h.x);c.setAttribute('cy',h.y);c.setAttribute('r',R);
+    c.setAttribute('fill','rgba(46,109,164,0.07)');
+    c.setAttribute('stroke','rgba(46,109,164,0.38)');
+    c.setAttribute('stroke-width','1.5');c.setAttribute('stroke-dasharray','5,3');
+    ghostG.appendChild(c);
+    const dot=document.createElementNS(NS,'circle');
+    dot.setAttribute('cx',h.x);dot.setAttribute('cy',h.y);dot.setAttribute('r','3');
+    dot.setAttribute('fill','rgba(46,109,164,0.45)');
+    ghostG.appendChild(dot);
+  });
+}
+
+// ── PLATFORM OPS ─────────────────────────────────────────────────────
+function addPlatform(){
+  snap();const cx=(svgEl.clientWidth/2-pan.x)/zoom,cy=(svgEl.clientHeight/2-pan.y)/zoom;
+  const p={id:platIdC++,x:Math.round(cx-100),y:Math.round(cy-40),w:200,h:80};
+  platforms.push(p);platG.appendChild(makePlat(p));selectPlat(p.id);toast('Platform added.');
+}
+function updatePlatform(){
+  if(!selPlatId)return;const p=platforms.find(x=>x.id===selPlatId);if(!p)return;
+  p.w=Math.max(40,+$('p-w').value||200);p.h=Math.max(20,+$('p-h').value||80);rebuildPlat(p);
+}
+function deletePlatform(){
+  if(!selPlatId)return;snap();platforms=platforms.filter(x=>x.id!==selPlatId);
+  const el=platG.querySelector(`[data-pid="${selPlatId}"]`);if(el)el.remove();
+  selPlatId=null;document.body.classList.remove('pp');toast('Platform deleted.');
+}
+$('del-plat-btn').addEventListener('click',deletePlatform);
+
+// ── ADD SEAT ─────────────────────────────────────────────────────────
+// After add: full state reset, re-render, NO auto-selection
+function addSeat(group,label){
+  clearDrag();
+  const cx=(svgEl.clientWidth/2-pan.x)/zoom,cy=(svgEl.clientHeight/2-pan.y)/zoom;
+  let x=Math.round(cx),y=Math.round(cy),t=0;
+  while(overlaps(x,y,null)&&t++<30){x+=R*2+2;if(t%5===0){x=Math.round(cx);y+=R*2+2;}}
+  snap();
+  seats.push({id:idC++,x,y,group,label,note:''});
+  deselect();renderAll();
+  if(isMobile())closeSidebar();
+  toast(label+' added. Click to select.');
+}
+
+// ── COPY / PASTE ─────────────────────────────────────────────────────
+function copySeat(){
+  if(!selId){toast('Select a seat first.');return;}
+  const s=getSeat(selId);if(!s)return;
+  clipboard={label:s.label,group:s.group,note:s.note||''};toast('Copied: '+s.label);
+}
+function pasteSeat(){
+  if(!clipboard){toast('Nothing copied.');return;}
+  clearDrag();
+  const cx=(svgEl.clientWidth/2-pan.x)/zoom,cy=(svgEl.clientHeight/2-pan.y)/zoom;
+  let px=Math.round(cx+R*2.2),py=Math.round(cy),t=0;
+  while(overlaps(px,py,null)&&t++<20)px+=R*2+2;
+  snap();seats.push({id:idC++,x:px,y:py,group:clipboard.group,label:clipboard.label,note:clipboard.note});
+  deselect();renderAll();
+  if(isMobile())closeSidebar();
+  toast('Pasted: '+clipboard.label+'. Click to select.');
+}
+
+// ── MOUSE ────────────────────────────────────────────────────────────
+// Capture phase: fires before seat's stopPropagation
+svgEl.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  const onSeat=e.target.closest('[data-id]');
+  const onPlat=e.target.closest('[data-pid]');
+  if(!onSeat&&!onPlat){
+    if(!multiSelectMode)deselect(); // clear selection when clicking empty canvas (unless building a multi-select)
+    panning=true;pSX=e.clientX-pan.x;pSY=e.clientY-pan.y;
+    e.stopPropagation();e.preventDefault();
+  }
+},true);
+function handleMove(e){
+  // Group drag (multi-select)
+  if(multiDrag&&multiDragOffsets.length){
+    const wc=toW(e);
+    multiDragOffsets.forEach(({id,dx,dy})=>{
+      const s=getSeat(id);if(!s)return;
+      const nx=wc.x-dx, ny=wc.y-dy;
+      // No overlap check for group drag (would block entire group)
+      s.x=Math.round(nx);s.y=Math.round(ny);
+      const el=world.querySelector(`[data-id="${id}"]`);
+      if(el)el.setAttribute('transform',`translate(${s.x},${s.y})`);
+    });
+    return;
+  }
+  if(seatDrag&&selId!==null){
+    const s=getSeat(selId);if(!s)return;
+    const wc=toW(e),{x:sx,y:sy}=snapXY(wc.x-dDX,wc.y-dDY,[selId]);
+    if(!overlaps(sx,sy,selId)){
+      s.x=sx;s.y=sy;
+      const el=world.querySelector(`[data-id="${selId}"]`);
+      if(el)el.setAttribute('transform',`translate(${sx},${sy})`);
+      drawGuides(sx,sy,[selId]);
+      updateGhostHint(selId,sx,sy);
+    }return;
+  }
+  if(platDragId!==null&&!platResize){
+    const p=platforms.find(x=>x.id===platDragId);if(!p)return;
+    const wc=toW(e),{x:sx,y:sy}=snapXY(wc.x-platDOX,wc.y-platDOY,[]);
+    p.x=sx;p.y=sy;
+    const el=platG.querySelector(`[data-pid="${platDragId}"]`);
+    if(el)el.setAttribute('transform',`translate(${p.x},${p.y})`);
+    drawGuides(p.x+p.w/2,p.y+p.h/2,[]);return;
+  }
+  if(platResize&&selPlatId!==null){
+    const p=platforms.find(x=>x.id===selPlatId);if(!p)return;
+    p.w=Math.max(40,pRW+(e.clientX-pRSX)/zoom);p.h=Math.max(20,pRH+(e.clientY-pRSY)/zoom);
+    $('p-w').value=Math.round(p.w);$('p-h').value=Math.round(p.h);rebuildPlat(p);return;
+  }
+  if(panning){pan.x=e.clientX-pSX;pan.y=e.clientY-pSY;applyTx();svgEl.style.cursor='grabbing';}
+}
+function handleUp(){clearDrag();svgEl.style.cursor='grab';}
+window.addEventListener('mousemove',handleMove);
+window.addEventListener('mouseup',handleUp);
+svgEl.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=svgEl.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const wx=(mx-pan.x)/zoom,wy=(my-pan.y)/zoom;
+  zoom=Math.min(5,Math.max(0.12,zoom-e.deltaY*0.001));
+  pan.x=mx-wx*zoom;pan.y=my-wy*zoom;applyTx();
+},{passive:false});
+
+// ── TOUCH ────────────────────────────────────────────────────────────
+// Capture phase: mirrors the mousedown capture listener above
+svgEl.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    e.preventDefault();clearDrag();
+    pinching=true;
+    const[t1,t2]=e.touches;
+    pinchStartDist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY)||1;
+    pinchStartZoom=zoom;
+    pinchMid={x:(t1.clientX+t2.clientX)/2,y:(t1.clientY+t2.clientY)/2};
+    pinchStartPan={x:pan.x,y:pan.y};
+    return;
+  }
+  if(e.touches.length===1){
+    const onSeat=e.target.closest('[data-id]');
+    const onPlat=e.target.closest('[data-pid]');
+    if(!onSeat&&!onPlat){
+      if(!multiSelectMode)deselect();
+      touchPanning=true;
+      const t=e.touches[0];
+      pSX=t.clientX-pan.x;pSY=t.clientY-pan.y;
+    }
+  }
+},{capture:true,passive:false});
+
+window.addEventListener('touchmove',e=>{
+  if(pinching&&e.touches.length===2){
+    e.preventDefault();
+    const[t1,t2]=e.touches;
+    const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+    const newZoom=Math.min(5,Math.max(0.12,pinchStartZoom*(dist/pinchStartDist)));
+    const r=svgEl.getBoundingClientRect();
+    const mx=pinchMid.x-r.left,my=pinchMid.y-r.top;
+    const wx=(mx-pinchStartPan.x)/pinchStartZoom,wy=(my-pinchStartPan.y)/pinchStartZoom;
+    zoom=newZoom;pan.x=mx-wx*zoom;pan.y=my-wy*zoom;applyTx();
+    return;
+  }
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];
+  if(touchLP.timer&&Math.hypot(t.clientX-touchLP.x,t.clientY-touchLP.y)>8){
+    clearTimeout(touchLP.timer);touchLP.timer=null;
+  }
+  if(touchPanning){
+    e.preventDefault();
+    pan.x=t.clientX-pSX;pan.y=t.clientY-pSY;applyTx();return;
+  }
+  if(seatDrag||multiDrag||platDragId!==null||platResize){
+    e.preventDefault();
+    handleMove({clientX:t.clientX,clientY:t.clientY});
+  }
+},{passive:false});
+
+window.addEventListener('touchend',e=>{
+  if(touchLP.timer){clearTimeout(touchLP.timer);touchLP.timer=null;}
+  if(e.touches.length<2)pinching=false;
+  if(e.touches.length===0){touchPanning=false;handleUp();}
+});
+
+// Swap in touch-friendly hint text on touch devices
+if('ontouchstart' in window||navigator.maxTouchPoints>0){
+  $('hint').innerHTML='Tap — select &amp; edit<br>Double-tap — rename<br>Long-press — duplicate<br>Drag empty area — pan<br>Pinch — zoom<br>☑ Multi-Select — pick several seats';
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────────────────
+window.addEventListener('keydown',e=>{
+  const inp=['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redo();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'){e.preventDefault();copySeat();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='v'){e.preventDefault();pasteSeat();return;}
+  if(inp)return;
+  if(e.key==='Escape'){
+    deselect();
+    if(multiSelectMode)toggleMultiSelectMode();
+    return;
+  }
+  if(e.key==='f'||e.key==='F'){fitToWindow();return;}
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if(selIds.size)deleteMulti();else if(selId)deleteSelected();else if(selPlatId)deletePlatform();
+    return;
+  }
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)&&selId){
+    e.preventDefault();const step=e.shiftKey?50:10;
+    const s=getSeat(selId);if(!s)return;
+    const nx=s.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0);
+    const ny=s.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0);
+    if(!overlaps(nx,ny,selId)){
+      snap();s.x=nx;s.y=ny;
+      const el=world.querySelector(`[data-id="${selId}"]`);
+      if(el)el.setAttribute('transform',`translate(${nx},${ny})`);
+    }
+  }
+});
+
+// ── TITLE SYNC ───────────────────────────────────────────────────────
+$('chart-title').addEventListener('input',()=>{const el=$('ttl');if(el)el.textContent=$('chart-title').value.toUpperCase();});
+
+// ── VIEW ─────────────────────────────────────────────────────────────
+function changeZoom(d){zoom=Math.min(5,Math.max(0.12,zoom+d));applyTx();}
+function resetView(){zoom=0.78;pan={x:svgEl.clientWidth/2-500*zoom,y:svgEl.clientHeight/2-400*zoom};applyTx();}
+function fitToWindow(){
+  if(!seats.length&&!platforms.length){resetView();toast('No content — showing default view.');return;}
+  const PAD=90;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  seats.forEach(s=>{
+    minX=Math.min(minX,s.x-R);maxX=Math.max(maxX,s.x+R);
+    minY=Math.min(minY,s.y-R);maxY=Math.max(maxY,s.y+R);
+  });
+  platforms.forEach(p=>{
+    minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x+p.w);
+    minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y+p.h);
+  });
+  // Reserve room for the title text above the topmost content
+  minY=Math.min(minY,COND_Y-90);
+  minX-=PAD;maxX+=PAD;minY-=PAD;maxY+=PAD;
+  const bw=Math.max(1,maxX-minX),bh=Math.max(1,maxY-minY);
+  const cw=svgEl.clientWidth,ch=svgEl.clientHeight;
+  zoom=Math.min(5,Math.max(0.12,Math.min(cw/bw,ch/bh)));
+  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+  pan.x=cw/2-cx*zoom;pan.y=ch/2-cy*zoom;
+  applyTx();
+  toast('Fitted to window.');
+}
+
+// ── PRESET ───────────────────────────────────────────────────────────
+function loadPreset(builder,title){
+  seats=builder();platforms=[];
+  idC=Math.max(...seats.map(s=>s.id))+1;
+  platIdC=1;history=[];future=[];
+  if(title)$('chart-title').value=title;
+  clearDrag();deselect();
+  if(multiSelectMode)toggleMultiSelectMode();
+  fitToWindow();initWorld();
+  if(isMobile())closeSidebar();
+}
+function confirmReset(){if(confirm('Restore default layout?\nAll changes will be lost.')){loadPreset(buildPreset,'Small Wind Ensemble');toast('Default layout restored.');}}
+function confirmWindBand(){if(confirm('Load Wind Band layout?\nAll changes will be lost.')){loadPreset(buildWindBand,'Wind Band');toast('Wind Band layout loaded.');}}
+
+// ── SAVE / LOAD ──────────────────────────────────────────────────────
+function saveJSON(){
+  const d={version:'3.2',title:$('chart-title').value,seats,platforms,colors:COL};
+  const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=url;a.download=`seating-${Date.now()}.json`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);toast('Layout saved.');
+}
+function loadJSON(input){
+  const file=input.files[0];if(!file)return;
+  const fr=new FileReader();
+  fr.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);if(!d.seats)throw 0;
+      seats=d.seats;platforms=d.platforms||[];
+      if(d.title)$('chart-title').value=d.title;
+      if(d.colors)Object.keys(d.colors).forEach(k=>{if(COL[k]){Object.assign(COL[k],d.colors[k]);$('cc-'+k).value=d.colors[k].c;}});
+      idC=Math.max(...seats.map(s=>s.id),0)+1;
+      platIdC=Math.max(...(platforms.length?platforms.map(p=>p.id):[0]),0)+1;
+      history=[];future=[];clearDrag();deselect();fitToWindow();initWorld();toast('Layout loaded.');
+    }catch{toast('Error: invalid layout file.');}
+    input.value='';
+  };
+  fr.readAsText(file);
+}
+
+// ── EXPORT PNG ───────────────────────────────────────────────────────
+function exportPNG(){
+  if(!seats.length){toast('No seats to export.');return;}
+  const PAD=70,SC=2;
+  const allX=seats.map(s=>s.x),allY=seats.map(s=>s.y);
+  const cond=seats.find(s=>s.label==='Conductor');
+  let minX=Math.min(...allX)-R-PAD,maxX=Math.max(...allX)+R+PAD;
+  let minY=Math.min(...allY)-R-PAD-20,maxY=Math.max(...allY)+R+PAD+20;
+  platforms.forEach(p=>{minX=Math.min(minX,p.x-PAD);maxX=Math.max(maxX,p.x+p.w+PAD);minY=Math.min(minY,p.y-PAD);maxY=Math.max(maxY,p.y+p.h+PAD);});
+  if(cond){const hw=Math.max(cond.x-minX,maxX-cond.x);minX=cond.x-hw;maxX=cond.x+hw;}
+  const W=Math.round(maxX-minX),H=Math.round(maxY-minY);
+  const out=document.createElementNS(NS,'svg');
+  out.setAttribute('xmlns',NS);out.setAttribute('width',W*SC);out.setAttribute('height',H*SC);out.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const bg=document.createElementNS(NS,'rect');bg.setAttribute('width','100%');bg.setAttribute('height','100%');bg.setAttribute('fill','#fff');out.appendChild(bg);
+  const g=document.createElementNS(NS,'g');g.setAttribute('transform',`translate(${-minX},${-minY})`);
+  const tt=document.createElementNS(NS,'text');
+  tt.setAttribute('x','500');tt.setAttribute('y',COND_Y-65);tt.setAttribute('text-anchor','middle');
+  tt.setAttribute('font-size','16');tt.setAttribute('fill','#8a7a60');tt.setAttribute('font-family',FONT);
+  tt.setAttribute('font-style','italic');tt.setAttribute('letter-spacing','3');
+  tt.textContent=$('chart-title').value.toUpperCase();g.appendChild(tt);
+  platforms.forEach(p=>{
+    const pg=document.createElementNS(NS,'g');pg.setAttribute('transform',`translate(${p.x},${p.y})`);
+    const pr=document.createElementNS(NS,'rect');pr.setAttribute('width',p.w);pr.setAttribute('height',p.h);pr.setAttribute('rx','4');
+    pr.setAttribute('fill','rgba(138,112,96,0.08)');pr.setAttribute('stroke','rgba(138,112,96,0.4)');pr.setAttribute('stroke-width','1.5');pr.setAttribute('stroke-dasharray','7,4');
+    pg.appendChild(pr);g.appendChild(pg);
+  });
+  seats.forEach(s=>{
+    const sg=COL[s.group];
+    const gg=document.createElementNS(NS,'g');gg.setAttribute('transform',`translate(${s.x},${s.y})`);
+    const c=document.createElementNS(NS,'circle');c.setAttribute('r',R);c.setAttribute('fill',sg.bg);c.setAttribute('stroke',sg.bd);c.setAttribute('stroke-width','2.5');
+    gg.appendChild(c);gg.appendChild(seatText(s,sg));g.appendChild(gg);
+  });
+  out.appendChild(g);
+  const str=new XMLSerializer().serializeToString(out);
+  const img=new Image();
+  img.onload=()=>{
+    const cv=document.createElement('canvas');cv.width=W*SC;cv.height=H*SC;
+    const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W*SC,H*SC);ctx.drawImage(img,0,0);
+    cv.toBlob(b=>dlBlob(b,'seating-chart.png'));
+  };
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(str)));
+  toast('Exporting PNG…');
+}
+function dlBlob(b,n){const url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+
+window.addEventListener('load',()=>loadPreset(buildPreset,'Small Wind Ensemble'));
+</script>
+</body>
+</html>
