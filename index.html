@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Wind Band Seating Planner v3.2</title>
+<title>Wind Band Seating Planner v3.3</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -139,13 +139,54 @@ body.ep #ep,body.mp #mp,body.pp #pp{display:block}
 .lx{background:var(--p2);border-color:var(--bd);color:var(--mu);padding:4px 8px;font-size:15px}
 
 /* Overlays */
-#ms-btn{position:absolute;top:12px;right:12px;z-index:25;
+#help-btn{position:absolute;top:12px;right:12px;z-index:25;width:34px;height:34px;
   background:rgba(245,243,238,0.97);border:1.5px solid var(--bd2);color:var(--tx2);
-  font-family:var(--f);font-size:13px;padding:8px 13px;cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;gap:6px;
-  transition:all .12s}
-#ms-btn:hover{border-color:var(--acc);color:var(--acc)}
-#ms-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+  font-family:var(--f);font-size:16px;font-weight:bold;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,0.12);border-radius:50%;
+  display:none;align-items:center;justify-content:center}
+#help-modal{display:none;position:fixed;inset:0;background:rgba(30,25,15,0.4);z-index:70;
+  align-items:center;justify-content:center;padding:20px}
+#help-modal.vis{display:flex}
+#help-card{background:var(--bg);border:1.5px solid var(--bd2);max-width:360px;width:100%;
+  max-height:80vh;overflow-y:auto;padding:18px 20px;box-shadow:0 8px 30px rgba(0,0,0,0.25)}
+#help-card .hm-title{font-size:17px;font-weight:bold;color:var(--acc);margin-bottom:12px}
+#help-card .hm-row{display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--tx2);align-items:flex-start}
+#help-card .hm-row b{color:var(--tx);min-width:96px;flex-shrink:0;font-style:italic}
+#help-card .hm-close{width:100%;margin-top:8px;padding:9px;font-size:14px;cursor:pointer;
+  font-family:var(--f);border:1px solid #2e6da4;background:#ddeeff;color:#1a4f7a}
+
+/* Persistent touch toolbar: Undo/Redo/Zoom/Fit/Multi-select, always reachable */
+#touch-toolbar{display:none;position:absolute;top:50%;right:10px;transform:translateY(-50%);
+  z-index:25;flex-direction:column;gap:7px;
+  background:rgba(245,243,238,0.95);border:1.5px solid var(--bd2);padding:8px;
+  box-shadow:0 2px 14px rgba(0,0,0,0.14)}
+.tt-btn{width:42px;height:42px;background:#fff;border:1px solid var(--bd);color:var(--tx2);
+  font-family:var(--f);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tt-btn:active{filter:brightness(.92)}
+.tt-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* Quick-add bottom sheet (flattened, no accordion — faster on touch) */
+#qa-fab{display:none;position:absolute;bottom:16px;right:16px;z-index:26;
+  width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;
+  font-size:26px;line-height:1;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,0.25);
+  align-items:center;justify-content:center}
+#qa-backdrop{display:none;position:fixed;inset:0;background:rgba(30,25,15,0.35);z-index:71}
+#qa-backdrop.vis{display:block}
+#qa-sheet{position:fixed;left:0;right:0;bottom:0;z-index:72;background:var(--bg);
+  border-top:1.5px solid var(--bd2);border-radius:14px 14px 0 0;
+  max-height:70vh;transform:translateY(100%);transition:transform .25s ease;
+  box-shadow:0 -6px 24px rgba(0,0,0,0.2);display:flex;flex-direction:column}
+#qa-sheet.open{transform:translateY(0)}
+.qa-handle{width:40px;height:4px;background:var(--bd2);border-radius:2px;margin:10px auto 4px}
+.qa-title{text-align:center;font-size:15px;font-weight:bold;color:var(--tx2);padding:2px 0 10px;
+  border-bottom:1px solid var(--bd)}
+.qa-scroll{overflow-y:auto;padding:12px 14px 20px}
+.qa-sec{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-style:italic;
+  margin:12px 0 7px;font-weight:bold}
+.qa-sec:first-child{margin-top:0}
+.qa-grid{display:flex;flex-wrap:wrap;gap:7px}
+.qa-grid button{padding:9px 13px;font-size:13px;font-family:var(--f);cursor:pointer;
+  border-radius:16px;background:#fff}
 #legend{position:absolute;top:58px;right:12px;background:rgba(245,243,238,0.95);
   border:1px solid var(--bd);padding:11px 15px;pointer-events:none}
 .lr{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;font-style:italic}
@@ -188,8 +229,14 @@ body.ep #ep,body.mp #mp,body.pp #pp{display:block}
   .sb2{min-height:38px}
   .zb{min-height:44px}
   .lb{min-height:40px}
-  #ms-btn{padding:10px 14px;font-size:14px}
 }
+/* Shown only on touch-capable devices (phones + tablets), any screen width */
+body.touch-ui #help-btn{display:flex}
+body.touch-ui #touch-toolbar{display:flex}
+body.touch-ui #qa-fab{display:flex}
+body.touch-ui #hint{display:none}
+body.touch-ui #le{top:auto;bottom:80px;left:8px;right:70px;transform:none;width:auto;
+  flex-wrap:wrap;max-width:none}
 </style>
 </head>
 <body>
@@ -201,7 +248,7 @@ body.ep #ep,body.mp #mp,body.pp #pp{display:block}
   <div class="ss">
     <div class="brand">Wind Band</div>
     <div class="bsub">Seating Planner</div>
-    <div class="vb">v3.2</div>
+    <div class="vb">v3.3</div>
   </div>
 
   <div class="ss">
@@ -453,11 +500,79 @@ body.ep #ep,body.mp #mp,body.pp #pp{display:block}
       <option value="other">Other</option>
     </select>
     <button class="lb la" onclick="applyLiveLabel()">&#10003;</button>
+    <button class="lb la" onclick="duplicateSelected()" title="Duplicate">&#10697;</button>
     <button class="lb ld" onclick="deleteSelected()">&#10005;</button>
     <button class="lb lx" onclick="deselect()">&#215;</button>
   </div>
 
-  <button id="ms-btn" onclick="toggleMultiSelectMode()">&#9745; Multi-Select</button>
+  <button id="help-btn" onclick="toggleHelp()" aria-label="Help">?</button>
+  <div id="help-modal" onclick="if(event.target===this)toggleHelp()">
+    <div id="help-card">
+      <div class="hm-title">How to Use</div>
+      <div class="hm-row"><b>Tap</b> Select a seat &amp; open the editor</div>
+      <div class="hm-row"><b>Double-tap</b> Rename that seat</div>
+      <div class="hm-row"><b>Drag a seat</b> Move it (snaps to alignment)</div>
+      <div class="hm-row"><b>Drag empty area</b> Pan the view</div>
+      <div class="hm-row"><b>Pinch</b> Zoom in / out</div>
+      <div class="hm-row"><b>&#9745; Multi-Select</b> Tap seats to build a group, then use Align / Arrange on Arc or Line from the sidebar</div>
+      <div class="hm-row"><b>&#10697; icon</b> Duplicate the selected seat</div>
+      <div class="hm-row"><b>+ button</b> Quick-add a new seat</div>
+      <div class="hm-row"><b>&#9776; menu</b> Full toolbox: colors, layouts, save/load</div>
+      <button class="hm-close" onclick="toggleHelp()">Got it</button>
+    </div>
+  </div>
+
+  <div id="touch-toolbar">
+    <button class="tt-btn" onclick="undo()" aria-label="Undo">&#8617;</button>
+    <button class="tt-btn" onclick="redo()" aria-label="Redo">&#8618;</button>
+    <button class="tt-btn" onclick="changeZoom(-.15)" aria-label="Zoom out">&#8722;</button>
+    <button class="tt-btn" onclick="changeZoom(.15)" aria-label="Zoom in">+</button>
+    <button class="tt-btn" onclick="fitToWindow()" aria-label="Fit to window">&#9974;</button>
+    <button class="tt-btn" id="ms-btn" onclick="toggleMultiSelectMode()" aria-label="Multi-select">&#9745;</button>
+  </div>
+
+  <button id="qa-fab" onclick="openQuickAdd()" aria-label="Add seat">+</button>
+  <div id="qa-backdrop" onclick="closeQuickAdd()"></div>
+  <div id="qa-sheet">
+    <div class="qa-handle"></div>
+    <div class="qa-title">Add Seat</div>
+    <div class="qa-scroll">
+      <div class="qa-sec" style="color:var(--wood)">Woodwind</div>
+      <div class="qa-grid">
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Piccolo')">Piccolo</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Flute')">Flute</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Oboe')">Oboe</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Bassoon')">Bassoon</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Clarinet')">Clarinet</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Bass Clarinet')">Bass Clarinet</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Alto Saxophone')">Alto Sax</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Tenor Saxophone')">Tenor Sax</button>
+        <button style="border:1px solid var(--wood);color:var(--wood)" onclick="quickAdd('woodwind','Baritone Saxophone')">Bari Sax</button>
+      </div>
+      <div class="qa-sec" style="color:var(--brass)">Brass</div>
+      <div class="qa-grid">
+        <button style="border:1px solid var(--brass);color:var(--brass)" onclick="quickAdd('brass','Trumpet')">Trumpet</button>
+        <button style="border:1px solid var(--brass);color:var(--brass)" onclick="quickAdd('brass','Horn')">Horn</button>
+        <button style="border:1px solid var(--brass);color:var(--brass)" onclick="quickAdd('brass','Trombone')">Trombone</button>
+        <button style="border:1px solid var(--brass);color:var(--brass)" onclick="quickAdd('brass','Euphonium')">Euphonium</button>
+        <button style="border:1px solid var(--brass);color:var(--brass)" onclick="quickAdd('brass','Tuba')">Tuba</button>
+      </div>
+      <div class="qa-sec" style="color:var(--perc)">Percussion</div>
+      <div class="qa-grid">
+        <button style="border:1px solid var(--perc);color:var(--perc)" onclick="quickAdd('percussion','Percussion')">Percussion</button>
+        <button style="border:1px solid var(--perc);color:var(--perc)" onclick="quickAdd('percussion','Timpani')">Timpani</button>
+        <button style="border:1px solid var(--perc);color:var(--perc)" onclick="quickAdd('percussion','Marimba')">Marimba</button>
+        <button style="border:1px solid var(--perc);color:var(--perc)" onclick="quickAdd('percussion','Vibraphone')">Vibraphone</button>
+      </div>
+      <div class="qa-sec" style="color:var(--other)">Other</div>
+      <div class="qa-grid">
+        <button style="border:1px solid var(--other);color:var(--other)" onclick="quickAdd('other','Conductor')">Conductor</button>
+        <button style="border:1px solid var(--other);color:var(--other)" onclick="quickAdd('other','String Bass')">String Bass</button>
+        <button style="border:1px solid var(--other);color:var(--other)" onclick="quickAdd('other','Electric Bass')">Electric Bass</button>
+        <button style="border:1px solid var(--other);color:var(--other)" onclick="quickAdd('other','Piano')">Piano</button>
+      </div>
+    </div>
+  </div>
 
   <div id="legend">
     <div class="lr" id="leg-woodwind" style="color:#2d7d46"><span class="ldot" style="background:#2d7d46"></span>Woodwind</div>
@@ -480,6 +595,7 @@ body.ep #ep,body.mp #mp,body.pp #pp{display:block}
   <div id="zbadge">Zoom: <span id="zval">100%</span></div>
   <div id="toast"></div>
 </div>
+
 
 <script>
 'use strict';
@@ -564,7 +680,7 @@ let zoom=1, pan={x:0,y:0};
 // Touch-specific state
 let touchPanning=false, pinching=false, pinchStartDist=1, pinchStartZoom=1;
 let pinchMid={x:0,y:0}, pinchStartPan={x:0,y:0};
-let touchLP={timer:null,x:0,y:0}; // long-press tracker (duplicate on hold)
+let touchPending=null; // {id,startX,startY,isGroup} — pending tap, promoted to drag only past a movement threshold
 let multiSelectMode=false; // tablet/mobile: tap-to-toggle selection, no Shift key needed
 
 const $=id=>document.getElementById(id);
@@ -794,27 +910,12 @@ function makeSeat(sd){
       return;
     }
 
-    // Long-press: duplicate (mirrors Alt+Click)
-    touchLP.x=t.clientX;touchLP.y=t.clientY;
-    touchLP.timer=setTimeout(()=>{
-      touchLP.timer=null;
-      if(navigator.vibrate)navigator.vibrate(25);
-      const src=getSeat(id);if(!src)return;
-      snap();seats.push({...src,id:idC++,x:src.x+R*2.2,y:src.y});
-      clearDrag();deselect();renderAll();toast('Duplicated. Tap to select.');
-    },550);
-
-    if(selIds.size>1&&selIds.has(id)){
-      snap();
-      const wc=toW({clientX:t.clientX,clientY:t.clientY});
-      multiDragOffsets=seats.filter(s=>selIds.has(s.id)).map(s=>({id:s.id,dx:wc.x-s.x,dy:wc.y-s.y}));
-      multiDrag=true;
-    }else{
-      snap();selIds.clear();selPlatId=null;
-      const wc=toW({clientX:t.clientX,clientY:t.clientY});
-      dDX=wc.x-sd.x;dDY=wc.y-sd.y;
-      seatDrag=true;activate(id);
-    }
+    // Don't commit to a drag yet — wait for real movement (see touchmove below).
+    // A tap that never moves past the threshold is treated as a plain select.
+    touchPending={
+      id,startX:t.clientX,startY:t.clientY,
+      isGroup:(selIds.size>1&&selIds.has(id))
+    };
   },{passive:true});
   el.addEventListener('dblclick',e=>{
     e.stopPropagation();e.preventDefault();
@@ -975,6 +1076,12 @@ function deleteSelected(){
   if(!selId)return;snap();seats=seats.filter(s=>s.id!==selId);
   const el=world.querySelector(`[data-id="${selId}"]`);if(el)el.remove();
   deselect();toast('Seat deleted.');
+}
+function duplicateSelected(){
+  if(!selId){toast('Select a seat first.');return;}
+  const src=getSeat(selId);if(!src)return;
+  snap();seats.push({...src,id:idC++,x:src.x+R*2.2,y:src.y});
+  clearDrag();deselect();renderAll();toast('Duplicated.');
 }
 
 // ── MULTI-SELECT OPS ─────────────────────────────────────────────────
@@ -1166,6 +1273,14 @@ function addSeat(group,label){
 }
 
 // ── COPY / PASTE ─────────────────────────────────────────────────────
+// ── HELP MODAL ───────────────────────────────────────────────────────
+function toggleHelp(){$('help-modal').classList.toggle('vis');}
+
+// ── QUICK-ADD SHEET (flattened seat picker for touch) ────────────────
+function openQuickAdd(){$('qa-sheet').classList.add('open');$('qa-backdrop').classList.add('vis');}
+function closeQuickAdd(){$('qa-sheet').classList.remove('open');$('qa-backdrop').classList.remove('vis');}
+function quickAdd(group,label){addSeat(group,label);closeQuickAdd();}
+
 function copySeat(){
   if(!selId){toast('Select a seat first.');return;}
   const s=getSeat(selId);if(!s)return;
@@ -1285,9 +1400,30 @@ window.addEventListener('touchmove',e=>{
   }
   if(e.touches.length!==1)return;
   const t=e.touches[0];
-  if(touchLP.timer&&Math.hypot(t.clientX-touchLP.x,t.clientY-touchLP.y)>8){
-    clearTimeout(touchLP.timer);touchLP.timer=null;
+
+  // Promote a pending tap to an actual drag only once real movement occurs.
+  // This is what keeps a simple tap from ever nudging a seat.
+  if(touchPending&&!seatDrag&&!multiDrag){
+    const dx=t.clientX-touchPending.startX, dy=t.clientY-touchPending.startY;
+    if(Math.hypot(dx,dy)<10)return; // still just a tap-in-progress — ignore
+    const {id,isGroup}=touchPending;
+    const sd=getSeat(id);
+    touchPending=null;
+    if(sd){
+      if(isGroup){
+        snap();
+        const wc=toW({clientX:t.clientX,clientY:t.clientY});
+        multiDragOffsets=seats.filter(s=>selIds.has(s.id)).map(s=>({id:s.id,dx:wc.x-s.x,dy:wc.y-s.y}));
+        multiDrag=true;
+      }else{
+        snap();selIds.clear();selPlatId=null;
+        const wc=toW({clientX:t.clientX,clientY:t.clientY});
+        dDX=wc.x-sd.x;dDY=wc.y-sd.y;
+        seatDrag=true;activate(id);
+      }
+    }
   }
+
   if(touchPanning){
     e.preventDefault();
     pan.x=t.clientX-pSX;pan.y=t.clientY-pSY;applyTx();return;
@@ -1299,15 +1435,15 @@ window.addEventListener('touchmove',e=>{
 },{passive:false});
 
 window.addEventListener('touchend',e=>{
-  if(touchLP.timer){clearTimeout(touchLP.timer);touchLP.timer=null;}
+  // A pending tap that never crossed the drag threshold = a plain select.
+  if(touchPending){
+    const {id}=touchPending;
+    touchPending=null;
+    selIds.clear();activate(id);
+  }
   if(e.touches.length<2)pinching=false;
   if(e.touches.length===0){touchPanning=false;handleUp();}
 });
-
-// Swap in touch-friendly hint text on touch devices
-if('ontouchstart' in window||navigator.maxTouchPoints>0){
-  $('hint').innerHTML='Tap — select &amp; edit<br>Double-tap — rename<br>Long-press — duplicate<br>Drag empty area — pan<br>Pinch — zoom<br>☑ Multi-Select — pick several seats';
-}
 
 // ── KEYBOARD ─────────────────────────────────────────────────────────
 window.addEventListener('keydown',e=>{
@@ -1386,7 +1522,7 @@ function confirmWindBand(){if(confirm('Load Wind Band layout?\nAll changes will 
 
 // ── SAVE / LOAD ──────────────────────────────────────────────────────
 function saveJSON(){
-  const d={version:'3.2',title:$('chart-title').value,seats,platforms,colors:COL};
+  const d={version:'3.3',title:$('chart-title').value,seats,platforms,colors:COL};
   const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(b),a=document.createElement('a');
   a.href=url;a.download=`seating-${Date.now()}.json`;a.click();
@@ -1454,6 +1590,13 @@ function exportPNG(){
   toast('Exporting PNG…');
 }
 function dlBlob(b,n){const url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+
+// ── TOUCH-CAPABILITY DETECTION ───────────────────────────────────────
+// Adds body.touch-ui for any touch-capable device (phone or tablet), regardless
+// of screen width, so the persistent toolbar / help button / quick-add sheet show up.
+if('ontouchstart' in window||navigator.maxTouchPoints>0){
+  document.body.classList.add('touch-ui');
+}
 
 window.addEventListener('load',()=>loadPreset(buildPreset,'Small Wind Ensemble'));
 </script>
