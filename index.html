@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Wind Band Seating Planner v3.4</title>
+<title>Wind Band Seating Planner v3.5</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -244,10 +244,40 @@ body.touch-ui #help-btn{display:flex}
 body.touch-ui #touch-toolbar{display:flex}
 body.touch-ui #qa-fab{display:flex}
 body.touch-ui #hint{display:none}
-body.touch-ui #le{top:auto;bottom:80px;left:8px;right:70px;transform:none;width:auto;
+/* Legend duplicates info already in the Help modal — drop it on touch to
+   reduce clutter and remove a collision source with help-btn/toolbar/fab */
+body.touch-ui #legend{display:none}
+/* Toast sat in the same bottom strip as the floating edit bars — move it
+   to a clear top-center spot instead of fighting for space down there */
+body.touch-ui #toast{bottom:auto;top:56px;left:50%;right:auto;transform:translateX(-50%)}
+body.touch-ui #le{top:auto;bottom:80px;left:8px;right:76px;transform:none;width:auto;
   flex-wrap:wrap;max-width:none}
-body.touch-ui #ple{top:auto;bottom:80px;left:8px;right:70px;transform:none;width:auto;
+body.touch-ui #ple{top:auto;bottom:80px;left:8px;right:76px;transform:none;width:auto;
   flex-wrap:wrap;max-width:none}
+
+/* Landscape phones: short viewport height, plenty of width.
+   Shrink the drawer and floating controls so an open menu doesn't dominate the screen. */
+@media (max-height:500px){
+  #sb{width:230px;max-width:230px}
+  .ss{padding:7px 10px}
+  .sl{font-size:9px;margin-bottom:5px}
+  .brand{font-size:17px}
+  .bsub{font-size:10px}
+  .vb{font-size:9px;padding:1px 5px}
+  .ab{padding:6px 9px;font-size:12px;min-height:30px}
+  .sb2{padding:5px 9px 5px 20px;font-size:12px;min-height:28px}
+  .gh{padding:6px 9px;font-size:12px}
+  input[type=text],select{padding:5px 7px;font-size:12px}
+  .cr,.pr{margin-bottom:4px}
+  #menu-btn{width:36px;height:36px;font-size:16px;top:8px;left:8px}
+  #help-btn{width:28px;height:28px;font-size:14px;top:8px;right:8px}
+  #qa-fab{width:44px;height:44px;font-size:22px;bottom:10px;right:10px}
+  .tt-btn{width:36px;height:36px;font-size:15px}
+  #touch-toolbar{gap:5px;padding:6px;right:8px}
+  #zbadge{bottom:6px;left:6px;font-size:11px;padding:5px 8px}
+  body.touch-ui #toast{top:8px}
+  body.touch-ui #le,body.touch-ui #ple{bottom:58px}
+}
 </style>
 </head>
 <body>
@@ -259,7 +289,7 @@ body.touch-ui #ple{top:auto;bottom:80px;left:8px;right:70px;transform:none;width
   <div class="ss">
     <div class="brand">Wind Band</div>
     <div class="bsub">Seating Planner</div>
-    <div class="vb">v3.4</div>
+    <div class="vb">v3.5</div>
   </div>
 
   <div class="ss">
@@ -538,6 +568,8 @@ body.touch-ui #ple{top:auto;bottom:80px;left:8px;right:70px;transform:none;width
       <div class="hm-row"><b>&#10697; icon</b> Duplicate the selected seat</div>
       <div class="hm-row"><b>+ button</b> Quick-add a new seat</div>
       <div class="hm-row"><b>&#9776; menu</b> Full toolbox: colors, layouts, save/load</div>
+      <div class="hm-title" style="margin-top:14px;font-size:13px">Section Colors</div>
+      <div id="hm-legend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:6px"></div>
       <button class="hm-close" onclick="toggleHelp()">Got it</button>
     </div>
   </div>
@@ -762,6 +794,22 @@ function updateLegend(){
     const r=$('leg-'+g);if(!r)return;
     r.style.color=COL[g].c;r.querySelector('.ldot').style.background=COL[g].c;
   });
+  buildHelpLegend();
+}
+function buildHelpLegend(){
+  const names={woodwind:'Woodwind',brass:'Brass',percussion:'Percussion',other:'Other'};
+  const box=$('hm-legend');if(!box)return;
+  box.innerHTML='';
+  Object.keys(names).forEach(g=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;font-size:13px;color:'+COL[g].c;
+    row.innerHTML=`<span style="width:10px;height:10px;border-radius:50%;background:${COL[g].c};flex-shrink:0"></span>${names[g]}`;
+    box.appendChild(row);
+  });
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;gap:6px;font-size:13px;color:var(--plat)';
+  row.innerHTML=`<span style="width:10px;height:10px;border-radius:2px;background:var(--plat);opacity:.5;flex-shrink:0"></span>Platform`;
+  box.appendChild(row);
 }
 
 // ── UTILS ────────────────────────────────────────────────────────────
@@ -1584,7 +1632,7 @@ function confirmWindBand(){if(confirm('Load Wind Band layout?\nAll changes will 
 
 // ── SAVE / LOAD ──────────────────────────────────────────────────────
 function saveJSON(){
-  const d={version:'3.4',title:$('chart-title').value,seats,platforms,colors:COL};
+  const d={version:'3.5',title:$('chart-title').value,seats,platforms,colors:COL};
   const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(b),a=document.createElement('a');
   a.href=url;a.download=`seating-${Date.now()}.json`;a.click();
@@ -1659,6 +1707,7 @@ function dlBlob(b,n){const url=URL.createObjectURL(b),a=document.createElement('
 if('ontouchstart' in window||navigator.maxTouchPoints>0){
   document.body.classList.add('touch-ui');
 }
+buildHelpLegend();
 
 window.addEventListener('load',()=>loadPreset(buildPreset,'Small Wind Ensemble'));
 </script>
